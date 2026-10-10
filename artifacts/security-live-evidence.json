@@ -1,0 +1,1417 @@
+{
+  "checks": [
+    "Native Fail2ban retry limit update",
+    "Fail2ban limits restored and active",
+    "Fail2ban IP ban",
+    "Fail2ban IP unban",
+    "Add port allow rule",
+    "Add port deny rule",
+    "Server IP block",
+    "Remove port rules and unblock server IP",
+    "Active SSH port block rejected",
+    "Website visitor block returns HTTP 403",
+    "Website visitor unblock returns HTTP 200",
+    "Disable IPv4 and IPv6 ping",
+    "Restore ping policy",
+    "SSH keys-only validated and reloaded",
+    "Original SSH settings restored",
+    "Test process TERM",
+    "Test process KILL",
+    "PID 1 termination rejected"
+  ],
+  "security": {
+    "administrator_ip": "152.59.46.160",
+    "connections": {
+      "available": true,
+      "output": "State Recv-Q Send-Q   Local Address:Port  Peer Address:Port Process\nESTAB 0      592    178.128.144.213:22   152.59.46.160:59522 users:((\"sshd\",pid=27198,fd=4))\n"
+    },
+    "domain_only": true,
+    "fail2ban": {
+      "available": true,
+      "output": "Status\n|- Number of jail:\t1\n`- Jail list:\tsshd\n"
+    },
+    "firewall": {
+      "available": true,
+      "output": "Status: inactive\n"
+    },
+    "login_history": {
+      "available": true,
+      "output": "reboot   system boot  0.0.0.0          Sat Oct 10 20:26   still running\n\nwtmp begins Sat Oct 10 20:26:01 2026\n"
+    },
+    "ok": true,
+    "ping_v4": true,
+    "ping_v6": true,
+    "ping_v6_available": true,
+    "ports": {
+      "available": true,
+      "output": "Netid State  Recv-Q Send-Q Local Address:Port Peer Address:PortProcess                                                    \nudp   UNCONN 0      0         127.0.0.54:53        0.0.0.0:*    users:((\"systemd-resolve\",pid=9850,fd=16))                \nudp   UNCONN 0      0      127.0.0.53%lo:53        0.0.0.0:*    users:((\"systemd-resolve\",pid=9850,fd=14))                \ntcp   LISTEN 0      4096   127.0.0.53%lo:53        0.0.0.0:*    users:((\"systemd-resolve\",pid=9850,fd=15))                \ntcp   LISTEN 0      4096         0.0.0.0:22        0.0.0.0:*    users:((\"sshd\",pid=9861,fd=3),(\"systemd\",pid=1,fd=198))   \ntcp   LISTEN 0      511          0.0.0.0:80        0.0.0.0:*    users:((\"nginx\",pid=27555,fd=5),(\"nginx\",pid=9692,fd=5))  \ntcp   LISTEN 0      4096      127.0.0.54:53        0.0.0.0:*    users:((\"systemd-resolve\",pid=9850,fd=17))                \ntcp   LISTEN 0      511        127.0.0.1:4100      0.0.0.0:*    users:((\"next-server (v\",pid=26152,fd=22))                \ntcp   LISTEN 0      511          0.0.0.0:443       0.0.0.0:*    users:((\"nginx\",pid=27555,fd=11),(\"nginx\",pid=9692,fd=11))\ntcp   LISTEN 0      4096            [::]:22           [::]:*    users:((\"sshd\",pid=9861,fd=4),(\"systemd\",pid=1,fd=199))   \ntcp   LISTEN 0      511             [::]:80           [::]:*    users:((\"nginx\",pid=27555,fd=6),(\"nginx\",pid=9692,fd=6))  \ntcp   LISTEN 0      511             [::]:443          [::]:*    users:((\"nginx\",pid=27555,fd=12),(\"nginx\",pid=9692,fd=12))\n"
+    },
+    "processes": [
+      {
+        "cpu": "1.4",
+        "elapsed": "01:34:49",
+        "memory": "0.0",
+        "name": "kswapd0",
+        "parent": 2,
+        "pid": 45,
+        "start": "54",
+        "user": "root"
+      },
+      {
+        "cpu": "1.1",
+        "elapsed": "00:06",
+        "memory": "1.3",
+        "name": "python3",
+        "parent": 27198,
+        "pid": 27251,
+        "start": "568307",
+        "user": "root"
+      },
+      {
+        "cpu": "0.8",
+        "elapsed": "02:10",
+        "memory": "6.5",
+        "name": "next-server",
+        "parent": 26149,
+        "pid": 26152,
+        "start": "555936",
+        "user": "across"
+      },
+      {
+        "cpu": "0.4",
+        "elapsed": "01:26:40",
+        "memory": "4.1",
+        "name": "PM2",
+        "parent": 1,
+        "pid": 10097,
+        "start": "48892",
+        "user": "across"
+      },
+      {
+        "cpu": "0.4",
+        "elapsed": "01:34:49",
+        "memory": "1.1",
+        "name": "systemd",
+        "parent": 0,
+        "pid": 1,
+        "start": "11",
+        "user": "root"
+      },
+      {
+        "cpu": "0.2",
+        "elapsed": "06:39",
+        "memory": "2.8",
+        "name": "fail2ban-server",
+        "parent": 1,
+        "pid": 23460,
+        "start": "529005",
+        "user": "root"
+      },
+      {
+        "cpu": "0.1",
+        "elapsed": "40:46",
+        "memory": "1.3",
+        "name": "fwupd",
+        "parent": 1,
+        "pid": 16309,
+        "start": "324329",
+        "user": "root"
+      },
+      {
+        "cpu": "0.1",
+        "elapsed": "01:33:51",
+        "memory": "1.4",
+        "name": "do-agent",
+        "parent": 1,
+        "pid": 1897,
+        "start": "5811",
+        "user": "do-agent"
+      },
+      {
+        "cpu": "0.1",
+        "elapsed": "00:09",
+        "memory": "1.0",
+        "name": "sshd",
+        "parent": 9861,
+        "pid": 27198,
+        "start": "567982",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:35",
+        "memory": "0.5",
+        "name": "dbus-daemon",
+        "parent": 1,
+        "pid": 826,
+        "start": "1430",
+        "user": "message+"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:35",
+        "memory": "0.7",
+        "name": "systemd-logind",
+        "parent": 1,
+        "pid": 838,
+        "start": "1473",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "30:09",
+        "memory": "0.0",
+        "name": "kworker/0:0-events",
+        "parent": 2,
+        "pid": 17556,
+        "start": "388025",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:26:57",
+        "memory": "0.9",
+        "name": "systemd-journal",
+        "parent": 1,
+        "pid": 9842,
+        "start": "47219",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:49",
+        "memory": "0.0",
+        "name": "rcu_preempt",
+        "parent": 2,
+        "pid": 17,
+        "start": "12",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "05:28",
+        "memory": "0.0",
+        "name": "kworker/0:2-events",
+        "parent": 2,
+        "pid": 24243,
+        "start": "536133",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:12:18",
+        "memory": "3.4",
+        "name": "PM2",
+        "parent": 1,
+        "pid": 13991,
+        "start": "135107",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:49",
+        "memory": "0.0",
+        "name": "ksoftirqd/0",
+        "parent": 2,
+        "pid": 16,
+        "start": "11",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:49",
+        "memory": "0.0",
+        "name": "kworker/0:1H-kblockd",
+        "parent": 2,
+        "pid": 44,
+        "start": "43",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:35",
+        "memory": "0.6",
+        "name": "polkitd",
+        "parent": 1,
+        "pid": 830,
+        "start": "1447",
+        "user": "polkitd"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:49",
+        "memory": "0.0",
+        "name": "kcompactd0",
+        "parent": 2,
+        "pid": 29,
+        "start": "19",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:47",
+        "memory": "0.0",
+        "name": "jbd2/vda1-8",
+        "parent": 2,
+        "pid": 201,
+        "start": "245",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "04:02",
+        "memory": "0.0",
+        "name": "kworker/u2:4-events_power_efficient",
+        "parent": 2,
+        "pid": 25252,
+        "start": "544743",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:26:57",
+        "memory": "0.7",
+        "name": "udisksd",
+        "parent": 1,
+        "pid": 9859,
+        "start": "47233",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:15:14",
+        "memory": "0.0",
+        "name": "kworker/u2:2-flush-253:0",
+        "parent": 2,
+        "pid": 13658,
+        "start": "117556",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:45",
+        "memory": "2.7",
+        "name": "multipathd",
+        "parent": 1,
+        "pid": 328,
+        "start": "386",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:33",
+        "memory": "0.6",
+        "name": "ModemManager",
+        "parent": 1,
+        "pid": 960,
+        "start": "1616",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:26:57",
+        "memory": "0.8",
+        "name": "sshd",
+        "parent": 1,
+        "pid": 9861,
+        "start": "47236",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:34",
+        "memory": "0.5",
+        "name": "rsyslogd",
+        "parent": 1,
+        "pid": 885,
+        "start": "1555",
+        "user": "syslog"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "35:09",
+        "memory": "0.0",
+        "name": "kworker/u2:0-events_power_efficient",
+        "parent": 2,
+        "pid": 16881,
+        "start": "358042",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "11:37",
+        "memory": "0.0",
+        "name": "kworker/u2:3-events_power_efficient",
+        "parent": 2,
+        "pid": 22200,
+        "start": "499201",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "16:08",
+        "memory": "0.0",
+        "name": "kworker/u2:1-flush-253:0",
+        "parent": 2,
+        "pid": 22162,
+        "start": "472171",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:26:57",
+        "memory": "0.5",
+        "name": "systemd-udevd",
+        "parent": 1,
+        "pid": 9853,
+        "start": "47227",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:26:57",
+        "memory": "0.5",
+        "name": "systemd-resolve",
+        "parent": 1,
+        "pid": 9850,
+        "start": "47225",
+        "user": "systemd+"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:13:43",
+        "memory": "0.5",
+        "name": "systemd",
+        "parent": 1,
+        "pid": 13675,
+        "start": "126624",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:27:04",
+        "memory": "0.8",
+        "name": "nginx",
+        "parent": 1,
+        "pid": 9692,
+        "start": "46544",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:33",
+        "memory": "1.3",
+        "name": "unattended-upgr",
+        "parent": 1,
+        "pid": 930,
+        "start": "1591",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:26:57",
+        "memory": "0.4",
+        "name": "systemd-timesyn",
+        "parent": 1,
+        "pid": 9851,
+        "start": "47226",
+        "user": "systemd+"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:26:57",
+        "memory": "0.4",
+        "name": "systemd-network",
+        "parent": 1,
+        "pid": 9843,
+        "start": "47220",
+        "user": "systemd+"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:33:40",
+        "memory": "0.2",
+        "name": "droplet-agent",
+        "parent": 1,
+        "pid": 2275,
+        "start": "6921",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:35",
+        "memory": "0.2",
+        "name": "cron",
+        "parent": 1,
+        "pid": 825,
+        "start": "1428",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:49",
+        "memory": "0.0",
+        "name": "migration/0",
+        "parent": 2,
+        "pid": 18,
+        "start": "12",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:49",
+        "memory": "0.0",
+        "name": "kthreadd",
+        "parent": 0,
+        "pid": 2,
+        "start": "11",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:49",
+        "memory": "0.0",
+        "name": "pool_workqueue_release",
+        "parent": 2,
+        "pid": 3,
+        "start": "11",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:49",
+        "memory": "0.0",
+        "name": "kworker/R-rcu_g",
+        "parent": 2,
+        "pid": 4,
+        "start": "11",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:49",
+        "memory": "0.0",
+        "name": "kworker/R-rcu_p",
+        "parent": 2,
+        "pid": 5,
+        "start": "11",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:49",
+        "memory": "0.0",
+        "name": "kworker/R-slub_",
+        "parent": 2,
+        "pid": 6,
+        "start": "11",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:49",
+        "memory": "0.0",
+        "name": "kworker/R-netns",
+        "parent": 2,
+        "pid": 7,
+        "start": "11",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:49",
+        "memory": "0.0",
+        "name": "kworker/0:0H-events_highpri",
+        "parent": 2,
+        "pid": 10,
+        "start": "11",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:49",
+        "memory": "0.0",
+        "name": "kworker/R-mm_pe",
+        "parent": 2,
+        "pid": 12,
+        "start": "11",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:49",
+        "memory": "0.0",
+        "name": "rcu_tasks_kthread",
+        "parent": 2,
+        "pid": 13,
+        "start": "11",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:49",
+        "memory": "0.0",
+        "name": "rcu_tasks_rude_kthread",
+        "parent": 2,
+        "pid": 14,
+        "start": "11",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:49",
+        "memory": "0.0",
+        "name": "rcu_tasks_trace_kthread",
+        "parent": 2,
+        "pid": 15,
+        "start": "11",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:49",
+        "memory": "0.0",
+        "name": "idle_inject/0",
+        "parent": 2,
+        "pid": 19,
+        "start": "12",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:49",
+        "memory": "0.0",
+        "name": "cpuhp/0",
+        "parent": 2,
+        "pid": 20,
+        "start": "12",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:49",
+        "memory": "0.0",
+        "name": "kdevtmpfs",
+        "parent": 2,
+        "pid": 21,
+        "start": "12",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:49",
+        "memory": "0.0",
+        "name": "kworker/R-inet_",
+        "parent": 2,
+        "pid": 22,
+        "start": "13",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:49",
+        "memory": "0.0",
+        "name": "kauditd",
+        "parent": 2,
+        "pid": 23,
+        "start": "14",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:49",
+        "memory": "0.0",
+        "name": "khungtaskd",
+        "parent": 2,
+        "pid": 24,
+        "start": "15",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:49",
+        "memory": "0.0",
+        "name": "oom_reaper",
+        "parent": 2,
+        "pid": 26,
+        "start": "18",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:49",
+        "memory": "0.0",
+        "name": "kworker/R-write",
+        "parent": 2,
+        "pid": 28,
+        "start": "18",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:49",
+        "memory": "0.0",
+        "name": "ksmd",
+        "parent": 2,
+        "pid": 30,
+        "start": "19",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:49",
+        "memory": "0.0",
+        "name": "khugepaged",
+        "parent": 2,
+        "pid": 31,
+        "start": "19",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:49",
+        "memory": "0.0",
+        "name": "kworker/R-kinte",
+        "parent": 2,
+        "pid": 32,
+        "start": "19",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:49",
+        "memory": "0.0",
+        "name": "kworker/R-kbloc",
+        "parent": 2,
+        "pid": 33,
+        "start": "19",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:49",
+        "memory": "0.0",
+        "name": "kworker/R-blkcg",
+        "parent": 2,
+        "pid": 34,
+        "start": "19",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:49",
+        "memory": "0.0",
+        "name": "irq/9-acpi",
+        "parent": 2,
+        "pid": 35,
+        "start": "20",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:49",
+        "memory": "0.0",
+        "name": "kworker/R-tpm_d",
+        "parent": 2,
+        "pid": 36,
+        "start": "34",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:49",
+        "memory": "0.0",
+        "name": "kworker/R-ata_s",
+        "parent": 2,
+        "pid": 37,
+        "start": "34",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:49",
+        "memory": "0.0",
+        "name": "kworker/R-md",
+        "parent": 2,
+        "pid": 38,
+        "start": "35",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:49",
+        "memory": "0.0",
+        "name": "kworker/R-md_bi",
+        "parent": 2,
+        "pid": 39,
+        "start": "35",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:49",
+        "memory": "0.0",
+        "name": "kworker/R-edac-",
+        "parent": 2,
+        "pid": 40,
+        "start": "35",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:49",
+        "memory": "0.0",
+        "name": "kworker/R-devfr",
+        "parent": 2,
+        "pid": 41,
+        "start": "35",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:49",
+        "memory": "0.0",
+        "name": "watchdogd",
+        "parent": 2,
+        "pid": 42,
+        "start": "36",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:49",
+        "memory": "0.0",
+        "name": "kworker/R-quota",
+        "parent": 2,
+        "pid": 43,
+        "start": "38",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:49",
+        "memory": "0.0",
+        "name": "ecryptfs-kthread",
+        "parent": 2,
+        "pid": 46,
+        "start": "55",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:49",
+        "memory": "0.0",
+        "name": "kworker/R-kthro",
+        "parent": 2,
+        "pid": 47,
+        "start": "60",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:49",
+        "memory": "0.0",
+        "name": "kworker/R-acpi_",
+        "parent": 2,
+        "pid": 48,
+        "start": "62",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:48",
+        "memory": "0.0",
+        "name": "scsi_eh_0",
+        "parent": 2,
+        "pid": 49,
+        "start": "113",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:48",
+        "memory": "0.0",
+        "name": "kworker/R-scsi_",
+        "parent": 2,
+        "pid": 50,
+        "start": "113",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:48",
+        "memory": "0.0",
+        "name": "scsi_eh_1",
+        "parent": 2,
+        "pid": 51,
+        "start": "114",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:48",
+        "memory": "0.0",
+        "name": "kworker/R-scsi_",
+        "parent": 2,
+        "pid": 52,
+        "start": "114",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:48",
+        "memory": "0.0",
+        "name": "scsi_eh_2",
+        "parent": 2,
+        "pid": 53,
+        "start": "114",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:48",
+        "memory": "0.0",
+        "name": "kworker/R-scsi_",
+        "parent": 2,
+        "pid": 54,
+        "start": "114",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:48",
+        "memory": "0.0",
+        "name": "kworker/R-mld",
+        "parent": 2,
+        "pid": 57,
+        "start": "125",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:48",
+        "memory": "0.0",
+        "name": "kworker/R-ipv6_",
+        "parent": 2,
+        "pid": 58,
+        "start": "125",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:48",
+        "memory": "0.0",
+        "name": "kworker/R-kstrp",
+        "parent": 2,
+        "pid": 65,
+        "start": "127",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:48",
+        "memory": "0.0",
+        "name": "kworker/u3:0",
+        "parent": 2,
+        "pid": 67,
+        "start": "132",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:48",
+        "memory": "0.0",
+        "name": "kworker/R-crypt",
+        "parent": 2,
+        "pid": 72,
+        "start": "133",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:48",
+        "memory": "0.0",
+        "name": "kworker/R-charg",
+        "parent": 2,
+        "pid": 82,
+        "start": "139",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:47",
+        "memory": "0.0",
+        "name": "kworker/R-raid5",
+        "parent": 2,
+        "pid": 164,
+        "start": "220",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:47",
+        "memory": "0.0",
+        "name": "kworker/R-ext4-",
+        "parent": 2,
+        "pid": 202,
+        "start": "245",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:46",
+        "memory": "0.0",
+        "name": "kworker/R-kmpat",
+        "parent": 2,
+        "pid": 294,
+        "start": "355",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:46",
+        "memory": "0.0",
+        "name": "kworker/R-kmpat",
+        "parent": 2,
+        "pid": 295,
+        "start": "355",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:45",
+        "memory": "0.0",
+        "name": "jbd2/vda16-8",
+        "parent": 2,
+        "pid": 400,
+        "start": "474",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:45",
+        "memory": "0.0",
+        "name": "kworker/R-ext4-",
+        "parent": 2,
+        "pid": 401,
+        "start": "474",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:34",
+        "memory": "0.1",
+        "name": "agetty",
+        "parent": 1,
+        "pid": 916,
+        "start": "1576",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:33",
+        "memory": "0.1",
+        "name": "agetty",
+        "parent": 1,
+        "pid": 961,
+        "start": "1619",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:34:29",
+        "memory": "0.0",
+        "name": "kworker/R-tls-s",
+        "parent": 2,
+        "pid": 1163,
+        "start": "1983",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:26:56",
+        "memory": "0.0",
+        "name": "psimon",
+        "parent": 2,
+        "pid": 9879,
+        "start": "47284",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:13:43",
+        "memory": "0.2",
+        "name": "(sd-pam)",
+        "parent": 13675,
+        "pid": 13677,
+        "start": "126625",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "01:13:43",
+        "memory": "0.0",
+        "name": "psimon",
+        "parent": 2,
+        "pid": 13682,
+        "start": "126640",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "10:47",
+        "memory": "0.0",
+        "name": "kworker/0:1-cgroup_free",
+        "parent": 2,
+        "pid": 22576,
+        "start": "504186",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "04:02",
+        "memory": "0.0",
+        "name": "kworker/u2:5",
+        "parent": 2,
+        "pid": 25253,
+        "start": "544743",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "02:50",
+        "memory": "0.0",
+        "name": "kworker/0:3",
+        "parent": 2,
+        "pid": 25881,
+        "start": "551949",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "02:10",
+        "memory": "0.1",
+        "name": "sh",
+        "parent": 10097,
+        "pid": 26149,
+        "start": "555934",
+        "user": "across"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "00:04",
+        "memory": "0.0",
+        "name": "psimon",
+        "parent": 2,
+        "pid": 27396,
+        "start": "568487",
+        "user": "root"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "00:01",
+        "memory": "0.9",
+        "name": "nginx",
+        "parent": 9692,
+        "pid": 27555,
+        "start": "568839",
+        "user": "www-data"
+      },
+      {
+        "cpu": "0.0",
+        "elapsed": "00:00",
+        "memory": "0.5",
+        "name": "across-server",
+        "parent": 27251,
+        "pid": 27584,
+        "start": "568883",
+        "user": "root"
+      }
+    ],
+    "sessions": {
+      "available": true,
+      "output": ""
+    },
+    "settings": {
+      "bantime": 3600,
+      "findtime": 600,
+      "maxretry": 5,
+      "trusted_administrators": [
+        "152.59.46.160"
+      ]
+    },
+    "ssh_activity": {
+      "available": true,
+      "output": "2026-10-10T21:55:24+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[24245]: Received disconnect from 152.59.46.160 port 59386:11: disconnected by user\n2026-10-10T21:55:24+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[24245]: Disconnected from user root 152.59.46.160 port 59386\n2026-10-10T21:55:24+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[24245]: pam_unix(sshd:session): session closed for user root\n2026-10-10T21:55:26+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[24292]: Accepted publickey for root from 152.59.46.160 port 59387 ssh2: ED25519 SHA256:3rOKue53QgMwXFROlESZUjKIUeJYC4H7NQc6L669+aI\n2026-10-10T21:55:26+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[24292]: pam_unix(sshd:session): session opened for user root(uid=0) by root(uid=0)\n2026-10-10T21:55:45+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[24560]: Accepted publickey for root from 152.59.46.160 port 59397 ssh2: ED25519 SHA256:3rOKue53QgMwXFROlESZUjKIUeJYC4H7NQc6L669+aI\n2026-10-10T21:55:45+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[24560]: pam_unix(sshd:session): session opened for user root(uid=0) by root(uid=0)\n2026-10-10T21:55:46+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[24560]: Received disconnect from 152.59.46.160 port 59397:11: disconnected by user\n2026-10-10T21:55:46+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[24560]: Disconnected from user root 152.59.46.160 port 59397\n2026-10-10T21:55:46+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[24560]: pam_unix(sshd:session): session closed for user root\n2026-10-10T21:55:48+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[24605]: Accepted publickey for root from 152.59.46.160 port 59399 ssh2: ED25519 SHA256:3rOKue53QgMwXFROlESZUjKIUeJYC4H7NQc6L669+aI\n2026-10-10T21:55:48+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[24605]: pam_unix(sshd:session): session opened for user root(uid=0) by root(uid=0)\n2026-10-10T21:55:51+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[24651]: Accepted publickey for root from 152.59.46.160 port 59400 ssh2: ED25519 SHA256:3rOKue53QgMwXFROlESZUjKIUeJYC4H7NQc6L669+aI\n2026-10-10T21:55:51+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[24651]: pam_unix(sshd:session): session opened for user root(uid=0) by root(uid=0)\n2026-10-10T21:56:09+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[24697]: Accepted publickey for root from 152.59.46.160 port 59407 ssh2: ED25519 SHA256:3rOKue53QgMwXFROlESZUjKIUeJYC4H7NQc6L669+aI\n2026-10-10T21:56:09+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[24698]: Accepted publickey for root from 152.59.46.160 port 59404 ssh2: ED25519 SHA256:3rOKue53QgMwXFROlESZUjKIUeJYC4H7NQc6L669+aI\n2026-10-10T21:56:09+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[24697]: pam_unix(sshd:session): session opened for user root(uid=0) by root(uid=0)\n2026-10-10T21:56:09+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[24698]: pam_unix(sshd:session): session opened for user root(uid=0) by root(uid=0)\n2026-10-10T21:56:09+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[24699]: Accepted publickey for root from 152.59.46.160 port 59405 ssh2: ED25519 SHA256:3rOKue53QgMwXFROlESZUjKIUeJYC4H7NQc6L669+aI\n2026-10-10T21:56:09+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[24700]: Accepted publickey for root from 152.59.46.160 port 13506 ssh2: ED25519 SHA256:3rOKue53QgMwXFROlESZUjKIUeJYC4H7NQc6L669+aI\n2026-10-10T21:56:09+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[24700]: pam_unix(sshd:session): session opened for user root(uid=0) by root(uid=0)\n2026-10-10T21:56:09+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[24699]: pam_unix(sshd:session): session opened for user root(uid=0) by root(uid=0)\n2026-10-10T21:56:13+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[24856]: Accepted publickey for root from 152.59.46.160 port 59410 ssh2: ED25519 SHA256:3rOKue53QgMwXFROlESZUjKIUeJYC4H7NQc6L669+aI\n2026-10-10T21:56:13+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[24856]: pam_unix(sshd:session): session opened for user root(uid=0) by root(uid=0)\n2026-10-10T21:56:14+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[24916]: Accepted publickey for root from 152.59.46.160 port 59414 ssh2: ED25519 SHA256:3rOKue53QgMwXFROlESZUjKIUeJYC4H7NQc6L669+aI\n2026-10-10T21:56:14+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[24918]: Accepted publickey for root from 152.59.46.160 port 59413 ssh2: ED25519 SHA256:3rOKue53QgMwXFROlESZUjKIUeJYC4H7NQc6L669+aI\n2026-10-10T21:56:14+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[24916]: pam_unix(sshd:session): session opened for user root(uid=0) by root(uid=0)\n2026-10-10T21:56:14+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[24918]: pam_unix(sshd:session): session opened for user root(uid=0) by root(uid=0)\n2026-10-10T21:56:14+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[24917]: Accepted publickey for root from 152.59.46.160 port 59412 ssh2: ED25519 SHA256:3rOKue53QgMwXFROlESZUjKIUeJYC4H7NQc6L669+aI\n2026-10-10T21:56:14+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[24915]: Accepted publickey for root from 152.59.46.160 port 59411 ssh2: ED25519 SHA256:3rOKue53QgMwXFROlESZUjKIUeJYC4H7NQc6L669+aI\n2026-10-10T21:56:14+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[24917]: pam_unix(sshd:session): session opened for user root(uid=0) by root(uid=0)\n2026-10-10T21:56:14+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[24915]: pam_unix(sshd:session): session opened for user root(uid=0) by root(uid=0)\n2026-10-10T21:56:20+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[25141]: Accepted publickey for root from 152.59.46.160 port 59416 ssh2: ED25519 SHA256:3rOKue53QgMwXFROlESZUjKIUeJYC4H7NQc6L669+aI\n2026-10-10T21:56:20+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[25141]: pam_unix(sshd:session): session opened for user root(uid=0) by root(uid=0)\n2026-10-10T21:56:46+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[25207]: Accepted publickey for root from 152.59.46.160 port 59425 ssh2: ED25519 SHA256:3rOKue53QgMwXFROlESZUjKIUeJYC4H7NQc6L669+aI\n2026-10-10T21:56:46+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[25207]: pam_unix(sshd:session): session opened for user root(uid=0) by root(uid=0)\n2026-10-10T21:57:05+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[25518]: Accepted publickey for root from 152.59.46.160 port 59429 ssh2: ED25519 SHA256:3rOKue53QgMwXFROlESZUjKIUeJYC4H7NQc6L669+aI\n2026-10-10T21:57:05+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[25518]: pam_unix(sshd:session): session opened for user root(uid=0) by root(uid=0)\n2026-10-10T21:57:11+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[25564]: Accepted publickey for root from 152.59.46.160 port 59431 ssh2: ED25519 SHA256:3rOKue53QgMwXFROlESZUjKIUeJYC4H7NQc6L669+aI\n2026-10-10T21:57:11+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[25564]: pam_unix(sshd:session): session opened for user root(uid=0) by root(uid=0)\n2026-10-10T21:57:25+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[25655]: Accepted publickey for root from 152.59.46.160 port 59435 ssh2: ED25519 SHA256:3rOKue53QgMwXFROlESZUjKIUeJYC4H7NQc6L669+aI\n2026-10-10T21:57:25+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[25655]: pam_unix(sshd:session): session opened for user root(uid=0) by root(uid=0)\n2026-10-10T21:57:36+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[25719]: Accepted publickey for root from 152.59.46.160 port 59439 ssh2: ED25519 SHA256:3rOKue53QgMwXFROlESZUjKIUeJYC4H7NQc6L669+aI\n2026-10-10T21:57:36+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[25719]: pam_unix(sshd:session): session opened for user root(uid=0) by root(uid=0)\n2026-10-10T21:57:58+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[25835]: Accepted publickey for root from 152.59.46.160 port 59448 ssh2: ED25519 SHA256:3rOKue53QgMwXFROlESZUjKIUeJYC4H7NQc6L669+aI\n2026-10-10T21:57:58+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[25835]: pam_unix(sshd:session): session opened for user root(uid=0) by root(uid=0)\n2026-10-10T21:58:01+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[25882]: Accepted publickey for root from 152.59.46.160 port 59449 ssh2: ED25519 SHA256:3rOKue53QgMwXFROlESZUjKIUeJYC4H7NQc6L669+aI\n2026-10-10T21:58:01+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[25882]: pam_unix(sshd:session): session opened for user root(uid=0) by root(uid=0)\n2026-10-10T21:58:12+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[25946]: Accepted publickey for root from 152.59.46.160 port 59451 ssh2: ED25519 SHA256:3rOKue53QgMwXFROlESZUjKIUeJYC4H7NQc6L669+aI\n2026-10-10T21:58:12+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[25946]: pam_unix(sshd:session): session opened for user root(uid=0) by root(uid=0)\n2026-10-10T21:58:14+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[25948]: Accepted publickey for root from 152.59.46.160 port 59453 ssh2: ED25519 SHA256:3rOKue53QgMwXFROlESZUjKIUeJYC4H7NQc6L669+aI\n2026-10-10T21:58:14+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[25948]: pam_unix(sshd:session): session opened for user root(uid=0) by root(uid=0)\n2026-10-10T21:58:15+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[25948]: Received disconnect from 152.59.46.160 port 59453:11: disconnected by user\n2026-10-10T21:58:15+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[25948]: Disconnected from user root 152.59.46.160 port 59453\n2026-10-10T21:58:15+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[25948]: pam_unix(sshd:session): session closed for user root\n2026-10-10T21:58:16+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[26044]: Accepted publickey for root from 152.59.46.160 port 59455 ssh2: ED25519 SHA256:3rOKue53QgMwXFROlESZUjKIUeJYC4H7NQc6L669+aI\n2026-10-10T21:58:16+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[26044]: pam_unix(sshd:session): session opened for user root(uid=0) by root(uid=0)\n2026-10-10T21:58:37+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[26092]: Accepted publickey for root from 152.59.46.160 port 59461 ssh2: ED25519 SHA256:3rOKue53QgMwXFROlESZUjKIUeJYC4H7NQc6L669+aI\n2026-10-10T21:58:37+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[26092]: pam_unix(sshd:session): session opened for user root(uid=0) by root(uid=0)\n2026-10-10T21:58:43+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[26169]: Accepted publickey for root from 152.59.46.160 port 59462 ssh2: ED25519 SHA256:3rOKue53QgMwXFROlESZUjKIUeJYC4H7NQc6L669+aI\n2026-10-10T21:58:43+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[26169]: pam_unix(sshd:session): session opened for user root(uid=0) by root(uid=0)\n2026-10-10T21:58:49+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[26233]: Accepted publickey for root from 152.59.46.160 port 59463 ssh2: ED25519 SHA256:3rOKue53QgMwXFROlESZUjKIUeJYC4H7NQc6L669+aI\n2026-10-10T21:58:49+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[26233]: pam_unix(sshd:session): session opened for user root(uid=0) by root(uid=0)\n2026-10-10T21:58:52+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[26278]: Accepted publickey for root from 152.59.46.160 port 59472 ssh2: ED25519 SHA256:3rOKue53QgMwXFROlESZUjKIUeJYC4H7NQc6L669+aI\n2026-10-10T21:58:52+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[26278]: pam_unix(sshd:session): session opened for user root(uid=0) by root(uid=0)\n2026-10-10T21:59:01+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[26323]: Accepted publickey for root from 152.59.46.160 port 59478 ssh2: ED25519 SHA256:3rOKue53QgMwXFROlESZUjKIUeJYC4H7NQc6L669+aI\n2026-10-10T21:59:01+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[26323]: pam_unix(sshd:session): session opened for user root(uid=0) by root(uid=0)\n2026-10-10T21:59:36+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[26392]: Accepted publickey for root from 152.59.46.160 port 59494 ssh2: ED25519 SHA256:3rOKue53QgMwXFROlESZUjKIUeJYC4H7NQc6L669+aI\n2026-10-10T21:59:36+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[26392]: pam_unix(sshd:session): session opened for user root(uid=0) by root(uid=0)\n2026-10-10T21:59:42+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[26665]: Accepted publickey for root from 152.59.46.160 port 59496 ssh2: ED25519 SHA256:3rOKue53QgMwXFROlESZUjKIUeJYC4H7NQc6L669+aI\n2026-10-10T21:59:42+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[26665]: pam_unix(sshd:session): session opened for user root(uid=0) by root(uid=0)\n2026-10-10T21:59:45+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[26807]: Accepted publickey for root from 152.59.46.160 port 59497 ssh2: ED25519 SHA256:3rOKue53QgMwXFROlESZUjKIUeJYC4H7NQc6L669+aI\n2026-10-10T21:59:45+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[26807]: pam_unix(sshd:session): session opened for user root(uid=0) by root(uid=0)\n2026-10-10T21:59:49+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[26860]: Accepted publickey for root from 152.59.46.160 port 59500 ssh2: ED25519 SHA256:3rOKue53QgMwXFROlESZUjKIUeJYC4H7NQc6L669+aI\n2026-10-10T21:59:49+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[26860]: pam_unix(sshd:session): session opened for user root(uid=0) by root(uid=0)\n2026-10-10T21:59:52+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[26935]: Accepted publickey for root from 152.59.46.160 port 59503 ssh2: ED25519 SHA256:3rOKue53QgMwXFROlESZUjKIUeJYC4H7NQc6L669+aI\n2026-10-10T21:59:52+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[26935]: pam_unix(sshd:session): session opened for user root(uid=0) by root(uid=0)\n2026-10-10T21:59:56+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[26995]: Accepted publickey for root from 152.59.46.160 port 59504 ssh2: ED25519 SHA256:3rOKue53QgMwXFROlESZUjKIUeJYC4H7NQc6L669+aI\n2026-10-10T21:59:56+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[26995]: pam_unix(sshd:session): session opened for user root(uid=0) by root(uid=0)\n2026-10-10T22:00:05+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[27059]: Accepted publickey for root from 152.59.46.160 port 59512 ssh2: ED25519 SHA256:3rOKue53QgMwXFROlESZUjKIUeJYC4H7NQc6L669+aI\n2026-10-10T22:00:05+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[27059]: pam_unix(sshd:session): session opened for user root(uid=0) by root(uid=0)\n2026-10-10T22:00:21+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[27107]: Accepted publickey for root from 152.59.46.160 port 59514 ssh2: ED25519 SHA256:3rOKue53QgMwXFROlESZUjKIUeJYC4H7NQc6L669+aI\n2026-10-10T22:00:21+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[27107]: pam_unix(sshd:session): session opened for user root(uid=0) by root(uid=0)\n2026-10-10T22:00:22+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[27107]: Received disconnect from 152.59.46.160 port 59514:11: disconnected by user\n2026-10-10T22:00:22+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[27107]: Disconnected from user root 152.59.46.160 port 59514\n2026-10-10T22:00:22+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[27107]: pam_unix(sshd:session): session closed for user root\n2026-10-10T22:00:24+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[27152]: Accepted publickey for root from 152.59.46.160 port 59515 ssh2: ED25519 SHA256:3rOKue53QgMwXFROlESZUjKIUeJYC4H7NQc6L669+aI\n2026-10-10T22:00:24+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[27152]: pam_unix(sshd:session): session opened for user root(uid=0) by root(uid=0)\n2026-10-10T22:00:41+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[27198]: Accepted publickey for root from 152.59.46.160 port 59522 ssh2: ED25519 SHA256:3rOKue53QgMwXFROlESZUjKIUeJYC4H7NQc6L669+aI\n2026-10-10T22:00:41+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[27198]: pam_unix(sshd:session): session opened for user root(uid=0) by root(uid=0)\n2026-10-10T22:00:48+00:00 ubuntu-s-1vcpu-1gb-nyc1 systemd[1]: Reloading ssh.service - OpenBSD Secure Shell server...\n2026-10-10T22:00:48+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[9861]: Received SIGHUP; restarting.\n2026-10-10T22:00:48+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[9861]: Server listening on 0.0.0.0 port 22.\n2026-10-10T22:00:48+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[9861]: Server listening on :: port 22.\n2026-10-10T22:00:48+00:00 ubuntu-s-1vcpu-1gb-nyc1 systemd[1]: Reloaded ssh.service - OpenBSD Secure Shell server.\n2026-10-10T22:00:48+00:00 ubuntu-s-1vcpu-1gb-nyc1 systemd[1]: Reloading ssh.service - OpenBSD Secure Shell server...\n2026-10-10T22:00:48+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[9861]: Received SIGHUP; restarting.\n2026-10-10T22:00:48+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[9861]: Server listening on 0.0.0.0 port 22.\n2026-10-10T22:00:48+00:00 ubuntu-s-1vcpu-1gb-nyc1 systemd[1]: Reloaded ssh.service - OpenBSD Secure Shell server.\n2026-10-10T22:00:48+00:00 ubuntu-s-1vcpu-1gb-nyc1 sshd[9861]: Server listening on :: port 22.\n"
+    },
+    "ssh_config": {
+      "available": true,
+      "output": "port 22\naddressfamily any\nlistenaddress [::]:22\nlistenaddress 0.0.0.0:22\nusepam yes\nlogingracetime 120\nx11displayoffset 10\nmaxauthtries 6\nmaxsessions 10\nclientaliveinterval 0\nclientalivecountmax 3\nrequiredrsasize 1024\nstreamlocalbindmask 0177\nunusedconnectiontimeout none\npermitrootlogin yes\nignorerhosts yes\nignoreuserknownhosts no\nhostbasedauthentication no\nhostbasedusesnamefrompacketonly no\npubkeyauthentication yes\nkerberosauthentication no\nkerberosorlocalpasswd yes\nkerberosticketcleanup yes\ngssapiauthentication no\ngssapicleanupcredentials yes\ngssapikeyexchange no\ngssapistrictacceptorcheck yes\ngssapistorecredentialsonrekey no\ngssapikexalgorithms gss-group14-sha256-,gss-group16-sha512-,gss-nistp256-sha256-,gss-curve25519-sha256-,gss-group14-sha1-,gss-gex-sha1-\npasswordauthentication no\nkbdinteractiveauthentication no\nprintmotd no\nprintlastlog yes\nx11forwarding yes\nx11uselocalhost yes\npermittty yes\npermituserrc yes\nstrictmodes yes\ntcpkeepalive yes\npermitemptypasswords no\ncompression yes\ngatewayports no\nusedns no\nallowtcpforwarding yes\nallowagentforwarding yes\ndisableforwarding no\nallowstreamlocalforwarding yes\nstreamlocalbindunlink no\nfingerprinthash SHA256\nexposeauthinfo no\ndebianbanner yes\npidfile /run/sshd.pid\nmodulifile /etc/ssh/moduli\nxauthlocation /usr/bin/xauth\nciphers chacha20-poly1305@openssh.com,aes128-ctr,aes192-ctr,aes256-ctr,aes128-gcm@openssh.com,aes256-gcm@openssh.com\nmacs umac-64-etm@openssh.com,umac-128-etm@openssh.com,hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,hmac-sha1-etm@openssh.com,umac-64@openssh.com,umac-128@openssh.com,hmac-sha2-256,hmac-sha2-512,hmac-sha1\nbanner none\nforcecommand none\nchrootdirectory none\ntrustedusercakeys none\nrevokedkeys none\nsecuritykeyprovider internal\nauthorizedprincipalsfile none\nversionaddendum none\nauthorizedkeyscommand none\nauthorizedkeyscommanduser none\nauthorizedprincipalscommand none\nauthorizedprincipalscommanduser none\nhostkeyagent none\nkexalgorithms sntrup761x25519-sha512@openssh.com,curve25519-sha256,curve25519-sha256@libssh.org,ecdh-sha2-nistp256,ecdh-sha2-nistp384,ecdh-sha2-nistp521,diffie-hellman-group-exchange-sha256,diffie-hellman-group16-sha512,diffie-hellman-group18-sha512,diffie-hellman-group14-sha256\ncasignaturealgorithms ssh-ed25519,ecdsa-sha2-nistp256,ecdsa-sha2-nistp384,ecdsa-sha2-nistp521,sk-ssh-ed25519@openssh.com,sk-ecdsa-sha2-nistp256@openssh.com,rsa-sha2-512,rsa-sha2-256\nhostbasedacceptedalgorithms ssh-ed25519-cert-v01@openssh.com,ecdsa-sha2-nistp256-cert-v01@openssh.com,ecdsa-sha2-nistp384-cert-v01@openssh.com,ecdsa-sha2-nistp521-cert-v01@openssh.com,sk-ssh-ed25519-cert-v01@openssh.com,sk-ecdsa-sha2-nistp256-cert-v01@openssh.com,rsa-sha2-512-cert-v01@openssh.com,rsa-sha2-256-cert-v01@openssh.com,ssh-ed25519,ecdsa-sha2-nistp256,ecdsa-sha2-nistp384,ecdsa-sha2-nistp521,sk-ssh-ed25519@openssh.com,sk-ecdsa-sha2-nistp256@openssh.com,rsa-sha2-512,rsa-sha2-256\nhostkeyalgorithms ssh-ed25519-cert-v01@openssh.com,ecdsa-sha2-nistp256-cert-v01@openssh.com,ecdsa-sha2-nistp384-cert-v01@openssh.com,ecdsa-sha2-nistp521-cert-v01@openssh.com,sk-ssh-ed25519-cert-v01@openssh.com,sk-ecdsa-sha2-nistp256-cert-v01@openssh.com,rsa-sha2-512-cert-v01@openssh.com,rsa-sha2-256-cert-v01@openssh.com,ssh-ed25519,ecdsa-sha2-nistp256,ecdsa-sha2-nistp384,ecdsa-sha2-nistp521,sk-ssh-ed25519@openssh.com,sk-ecdsa-sha2-nistp256@openssh.com,rsa-sha2-512,rsa-sha2-256\npubkeyacceptedalgorithms ssh-ed25519-cert-v01@openssh.com,ecdsa-sha2-nistp256-cert-v01@openssh.com,ecdsa-sha2-nistp384-cert-v01@openssh.com,ecdsa-sha2-nistp521-cert-v01@openssh.com,sk-ssh-ed25519-cert-v01@openssh.com,sk-ecdsa-sha2-nistp256-cert-v01@openssh.com,rsa-sha2-512-cert-v01@openssh.com,rsa-sha2-256-cert-v01@openssh.com,ssh-ed25519,ecdsa-sha2-nistp256,ecdsa-sha2-nistp384,ecdsa-sha2-nistp521,sk-ssh-ed25519@openssh.com,sk-ecdsa-sha2-nistp256@openssh.com,rsa-sha2-512,rsa-sha2-256\nloglevel INFO\nsyslogfacility AUTH\nauthorizedkeysfile .ssh/authorized_keys .ssh/authorized_keys2\nhostkey /etc/ssh/ssh_host_rsa_key\nhostkey /etc/ssh/ssh_host_ecdsa_key\nhostkey /etc/ssh/ssh_host_ed25519_key\nacceptenv LANG\nacceptenv LC_*\nauthenticationmethods any\nchanneltimeout none\nsubsystem sftp /usr/lib/openssh/sftp-server \nmaxstartups 10:30:100\npersourcemaxstartups none\npersourcenetblocksize 32:128\npermittunnel no\nipqos lowdelay throughput\nrekeylimit 0 0\npermitopen any\npermitlisten any\npermituserenvironment no\npubkeyauthoptions none\n"
+    },
+    "sshd_jail": {
+      "available": true,
+      "output": "Status for the jail: sshd\n|- Filter\n|  |- Currently failed:\t1\n|  |- Total failed:\t11\n|  `- Journal matches:\t_SYSTEMD_UNIT=sshd.service + _COMM=sshd\n`- Actions\n   |- Currently banned:\t1\n   |- Total banned:\t5\n   `- Banned IP list:\t13.143.132.229\n"
+    },
+    "updates": {
+      "available": true,
+      "output": "\nWARNING: apt does not have a stable CLI interface. Use with caution in scripts.\n\nListing...\ndracut-install/noble-updates,noble-security 060+5-1ubuntu3.4 amd64 [upgradable from: 060+5-1ubuntu3.3]\nlibarchive13t64/noble-updates,noble-security 3.7.2-2ubuntu0.9 amd64 [upgradable from: 3.7.2-2ubuntu0.8]\nlibevent-core-2.1-7t64/noble-updates,noble-security 2.1.12-stable-9ubuntu2.2 amd64 [upgradable from: 2.1.12-stable-9ubuntu2.1]\nlibfreetype6/noble-updates,noble-security 2.13.2+dfsg-1ubuntu0.2 amd64 [upgradable from: 2.13.2+dfsg-1ubuntu0.1]\nlibheif-plugin-aomdec/noble-updates,noble-security 1.17.6-1ubuntu4.9 amd64 [upgradable from: 1.17.6-1ubuntu4.8]\nlibheif-plugin-aomenc/noble-updates,noble-security 1.17.6-1ubuntu4.9 amd64 [upgradable from: 1.17.6-1ubuntu4.8]\nlibheif1/noble-updates,noble-security 1.17.6-1ubuntu4.9 amd64 [upgradable from: 1.17.6-1ubuntu4.8]\nlibopeniscsiusr/noble-updates 2.1.9-3ubuntu5.5 amd64 [upgradable from: 2.1.9-3ubuntu5.4]\nlibpng16-16t64/noble-updates,noble-security 1.6.43-5ubuntu0.7 amd64 [upgradable from: 1.6.43-5ubuntu0.6]\nlibsgutils2-1.46-2/noble-updates,noble-security 1.46-3ubuntu4.1 amd64 [upgradable from: 1.46-3ubuntu4]\nlibxml2/noble-updates,noble-security 2.9.14+dfsg-1.3ubuntu3.10 amd64 [upgradable from: 2.9.14+dfsg-1.3ubuntu3.9]\nlibxpm4/noble-updates,noble-security 1:3.5.17-1ubuntu0.24.04.2 amd64 [upgradable from: 1:3.5.17-1ubuntu0.24.04.1]\nlinux-headers-generic/noble-updates,noble-security 6.8.0-146.146 amd64 [upgradable from: 6.8.0-142.142]\nlinux-headers-virtual/noble-updates,noble-security 6.8.0-146.146 amd64 [upgradable from: 6.8.0-142.142]\nlinux-image-virtual/noble-updates,noble-security 6.8.0-146.146 amd64 [upgradable from: 6.8.0-142.142]\nlinux-libc-dev/noble-updates,noble-security 6.8.0-146.146 amd64 [upgradable from: 6.8.0-142.142]\nlinux-tools-common/noble-updates,noble-security 6.8.0-146.146 all [upgradable from: 6.8.0-142.142]\nlinux-virtual/noble-updates,noble-security 6.8.0-146.146 amd64 [upgradable from: 6.8.0-142.142]\nopen-iscsi/noble-updates 2.1.9-3ubuntu5.5 amd64 [upgradable from: 2.1.9-3ubuntu5.4]\npython3-jwt/noble-updates,noble-security 2.7.0-1ubuntu0.2 all [upgradable from: 2.7.0-1ubuntu0.1]\npython3-requests/noble-updates,noble-security 2.31.0+dfsg-1ubuntu1.2 all [upgradable from: 2.31.0+dfsg-1ubuntu1.1]\nsg3-utils-udev/noble-updates,noble-security 1.46-3ubuntu4.1 all [upgradable from: 1.46-3ubuntu4]\nsg3-utils/noble-updates,noble-security 1.46-3ubuntu4.1 amd64 [upgradable from: 1.46-3ubuntu4]\nsosreport/noble-updates 4.11.2-0ubuntu0~24.04.1 amd64 [upgradable from: 4.10.2-0ubuntu0~24.04.1]\nsudo/noble-updates,noble-security 1.9.15p5-3ubuntu5.24.04.4 amd64 [upgradable from: 1.9.15p5-3ubuntu5.24.04.3]\n"
+    },
+    "users": [
+      {
+        "gid": "0",
+        "home": "/root",
+        "name": "root",
+        "shell": "/bin/bash",
+        "uid": "0"
+      },
+      {
+        "gid": "1",
+        "home": "/usr/sbin",
+        "name": "daemon",
+        "shell": "/usr/sbin/nologin",
+        "uid": "1"
+      },
+      {
+        "gid": "2",
+        "home": "/bin",
+        "name": "bin",
+        "shell": "/usr/sbin/nologin",
+        "uid": "2"
+      },
+      {
+        "gid": "3",
+        "home": "/dev",
+        "name": "sys",
+        "shell": "/usr/sbin/nologin",
+        "uid": "3"
+      },
+      {
+        "gid": "65534",
+        "home": "/bin",
+        "name": "sync",
+        "shell": "/bin/sync",
+        "uid": "4"
+      },
+      {
+        "gid": "60",
+        "home": "/usr/games",
+        "name": "games",
+        "shell": "/usr/sbin/nologin",
+        "uid": "5"
+      },
+      {
+        "gid": "12",
+        "home": "/var/cache/man",
+        "name": "man",
+        "shell": "/usr/sbin/nologin",
+        "uid": "6"
+      },
+      {
+        "gid": "7",
+        "home": "/var/spool/lpd",
+        "name": "lp",
+        "shell": "/usr/sbin/nologin",
+        "uid": "7"
+      },
+      {
+        "gid": "8",
+        "home": "/var/mail",
+        "name": "mail",
+        "shell": "/usr/sbin/nologin",
+        "uid": "8"
+      },
+      {
+        "gid": "9",
+        "home": "/var/spool/news",
+        "name": "news",
+        "shell": "/usr/sbin/nologin",
+        "uid": "9"
+      },
+      {
+        "gid": "10",
+        "home": "/var/spool/uucp",
+        "name": "uucp",
+        "shell": "/usr/sbin/nologin",
+        "uid": "10"
+      },
+      {
+        "gid": "13",
+        "home": "/bin",
+        "name": "proxy",
+        "shell": "/usr/sbin/nologin",
+        "uid": "13"
+      },
+      {
+        "gid": "33",
+        "home": "/var/www",
+        "name": "www-data",
+        "shell": "/usr/sbin/nologin",
+        "uid": "33"
+      },
+      {
+        "gid": "34",
+        "home": "/var/backups",
+        "name": "backup",
+        "shell": "/usr/sbin/nologin",
+        "uid": "34"
+      },
+      {
+        "gid": "38",
+        "home": "/var/list",
+        "name": "list",
+        "shell": "/usr/sbin/nologin",
+        "uid": "38"
+      },
+      {
+        "gid": "39",
+        "home": "/run/ircd",
+        "name": "irc",
+        "shell": "/usr/sbin/nologin",
+        "uid": "39"
+      },
+      {
+        "gid": "65534",
+        "home": "/nonexistent",
+        "name": "_apt",
+        "shell": "/usr/sbin/nologin",
+        "uid": "42"
+      },
+      {
+        "gid": "65534",
+        "home": "/nonexistent",
+        "name": "nobody",
+        "shell": "/usr/sbin/nologin",
+        "uid": "65534"
+      },
+      {
+        "gid": "998",
+        "home": "/",
+        "name": "systemd-network",
+        "shell": "/usr/sbin/nologin",
+        "uid": "998"
+      },
+      {
+        "gid": "996",
+        "home": "/",
+        "name": "systemd-timesync",
+        "shell": "/usr/sbin/nologin",
+        "uid": "996"
+      },
+      {
+        "gid": "65534",
+        "home": "/usr/lib/dhcpcd",
+        "name": "dhcpcd",
+        "shell": "/bin/false",
+        "uid": "100"
+      },
+      {
+        "gid": "101",
+        "home": "/nonexistent",
+        "name": "messagebus",
+        "shell": "/usr/sbin/nologin",
+        "uid": "101"
+      },
+      {
+        "gid": "102",
+        "home": "/nonexistent",
+        "name": "syslog",
+        "shell": "/usr/sbin/nologin",
+        "uid": "102"
+      },
+      {
+        "gid": "991",
+        "home": "/",
+        "name": "systemd-resolve",
+        "shell": "/usr/sbin/nologin",
+        "uid": "991"
+      },
+      {
+        "gid": "103",
+        "home": "/run/uuidd",
+        "name": "uuidd",
+        "shell": "/usr/sbin/nologin",
+        "uid": "103"
+      },
+      {
+        "gid": "104",
+        "home": "/var/lib/tpm",
+        "name": "tss",
+        "shell": "/bin/false",
+        "uid": "104"
+      },
+      {
+        "gid": "65534",
+        "home": "/run/sshd",
+        "name": "sshd",
+        "shell": "/usr/sbin/nologin",
+        "uid": "105"
+      },
+      {
+        "gid": "1",
+        "home": "/var/cache/pollinate",
+        "name": "pollinate",
+        "shell": "/bin/false",
+        "uid": "106"
+      },
+      {
+        "gid": "108",
+        "home": "/nonexistent",
+        "name": "tcpdump",
+        "shell": "/usr/sbin/nologin",
+        "uid": "107"
+      },
+      {
+        "gid": "109",
+        "home": "/var/lib/landscape",
+        "name": "landscape",
+        "shell": "/usr/sbin/nologin",
+        "uid": "108"
+      },
+      {
+        "gid": "990",
+        "home": "/var/lib/fwupd",
+        "name": "fwupd-refresh",
+        "shell": "/usr/sbin/nologin",
+        "uid": "990"
+      },
+      {
+        "gid": "989",
+        "home": "/",
+        "name": "polkitd",
+        "shell": "/usr/sbin/nologin",
+        "uid": "989"
+      },
+      {
+        "gid": "988",
+        "home": "/home/do-agent",
+        "name": "do-agent",
+        "shell": "/bin/false",
+        "uid": "999"
+      },
+      {
+        "gid": "987",
+        "home": "/var/lib/across",
+        "name": "across",
+        "shell": "/usr/sbin/nologin",
+        "uid": "997"
+      }
+    ],
+    "websites": [
+      {
+        "app_id": "tradelyzer",
+        "blocked_ips": [],
+        "body_mb": 20,
+        "burst": 40,
+        "certificate": {
+          "available": true,
+          "output": "notBefore=Oct 10 20:21:28 2026 GMT\nnotAfter=Jan  8 20:21:27 2027 GMT\nissuer=C = US, O = Let's Encrypt, CN = YE1\nsubject=CN = tradelyzer.harshevo.dev\n"
+        },
+        "domains": [
+          "tradelyzer.harshevo.dev"
+        ],
+        "https": true,
+        "rate": 5
+      }
+    ]
+  }
+}

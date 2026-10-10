@@ -4,11 +4,14 @@
 #include <atomic>
 #include <cctype>
 #include <chrono>
+#include <cmath>
 #include <cstring>
+#include <ctime>
 #include <cstdlib>
 #include <filesystem>
 #include <future>
 #include <fstream>
+#include <iomanip>
 #include <memory>
 #include <mutex>
 #include <optional>
@@ -999,6 +1002,24 @@ struct Application {
   TextField memory_limit{"Memory / MiB", "512", "512", "Maximum service memory in mebibytes."};
   TextField firewall_port{"Port", "443", "443", "TCP or UDP port to allow or remove in the firewall."};
   TextField firewall_protocol{"Protocol", "tcp", "tcp", "Use tcp or udp to match the service protocol."};
+  TextField security_ip{"IP address", "", "203.0.113.10", "One IPv4 or IPv6 address. Your SSH administrator IP is protected."};
+  TextField fail_retry{"Failed attempts", "5", "5", "Failures before banning: 1 to 100."};
+  TextField fail_window{"Find time / seconds", "600", "600", "Window in which failures count: 10 to 604800 seconds."};
+  TextField fail_ban{"Ban time / seconds", "3600", "3600", "Ban duration: 10 to 31536000 seconds."};
+  TextField process_filter{"Find process", "", "PID, name, or user", "Filter the process table."};
+  TextField traffic_app{"Project", "all", "all or app ID", "Select all websites or enter one deployed application ID."};
+  TextField traffic_hours{"Hours", "24", "24", "Choose 1 to 48 hours. Counters cover current and previous daily logs."};
+  TextField traffic_filter{"Find page / IP / device", "", "/journal", "Filter the displayed traffic rows."};
+  nlohmann::json security_data = nlohmann::json::object(), monitoring_data = nlohmann::json::object();
+  nlohmann::json previous_host = nlohmann::json::object();
+  bool security_attempted{false}, monitoring_attempted{false}, monitoring_auto{false};
+  double monitoring_updated{0}, network_rx_rate{0}, network_tx_rate{0}, host_cpu{-1};
+  double monitoring_received{0}, security_received{0};
+  bool monitoring_scroll_drag{false}, security_scroll_drag{false};
+  bool security_ssh_details{false};
+  float monitoring_scroll_grab{0}, security_scroll_grab{0};
+  int security_section{0}, security_scroll{0}, monitoring_section{0}, monitoring_scroll{0}, process_selected{-1};
+  std::chrono::steady_clock::time_point process_confirmation{};
   CodeEditor nginx_editor;
   nlohmann::json websites = nlohmann::json::array();
   nlohmann::json metrics = nlohmann::json::object();
@@ -1011,7 +1032,7 @@ struct Application {
   bool show_recent_projects{false};
   std::unique_ptr<FileBrowser> file_browser;
   std::vector<TextField*> management_fields() {
-    return {&server_label, &server_host, &server_user, &server_port, &identity, &manifest, &app_id, &project_root, &project_type, &project_port, &domains, &artifact, &install, &build, &deployment_dir, &start, &upstreams, &body_limit, &rate, &burst, &email, &dns_domain, &dns_address, &dns_zone, &dns_token_file, &branch, &pipeline_manifest, &resource_service, &cpu_limit, &memory_limit, &firewall_port, &firewall_protocol, &custom_package};
+    return {&server_label, &server_host, &server_user, &server_port, &identity, &manifest, &app_id, &project_root, &project_type, &project_port, &domains, &artifact, &install, &build, &deployment_dir, &start, &upstreams, &body_limit, &rate, &burst, &email, &dns_domain, &dns_address, &dns_zone, &dns_token_file, &branch, &pipeline_manifest, &resource_service, &cpu_limit, &memory_limit, &firewall_port, &firewall_protocol, &custom_package, &security_ip, &fail_retry, &fail_window, &fail_ban, &process_filter, &traffic_app, &traffic_hours, &traffic_filter};
   }
   std::mutex log_mutex;
   std::string log;
@@ -1030,7 +1051,7 @@ struct Application {
       if (!desktop_state.is_object()) desktop_state = nlohmann::json::object();
     } catch (const std::exception& error) { append_log(std::string{"Could not restore desktop state: "} + error.what()); }
     servers = store.list_servers();
-    const int saved_page = std::clamp(desktop_state.value("page", 1), 0, 9);
+    const int saved_page = std::clamp(desktop_state.value("page", 1), 0, 11);
     const auto saved_server = desktop_state.value("selected_server", "");
     const auto found = std::find_if(servers.begin(), servers.end(), [&](const auto& server) { return server.id == saved_server; });
     if (!servers.empty()) select(found == servers.end() ? 0 : static_cast<int>(found - servers.begin()));
@@ -1076,8 +1097,11 @@ struct Application {
   void refresh_all() {
     if (selected < 0 || busy.load()) return;
     const auto profile = selected_server(); const auto id = app_id.value;
+    const bool include_security = security_attempted || page == 10;
+    const bool include_monitoring = monitoring_attempted || page == 11;
+    const auto monitoring_arguments = admin_arguments("monitoring");
     refresh_requested = false;
-    start_job("Refresh all", [this, profile, id](const auto&) {
+    start_job("Refresh all", [this, profile, id, include_security, include_monitoring, monitoring_arguments](const auto&) {
       nlohmann::json data = nlohmann::json::object();
       bool failed = false;
       auto fetch = [&](const std::string& name, std::vector<std::string> arguments) {
@@ -1099,9 +1123,55 @@ struct Application {
       auto packages = profile.packages;
       for (const auto& name : profile.custom_packages) if (std::find(packages.begin(), packages.end(), name) == packages.end()) packages.push_back(name);
       fetch("packages", {"packages", "--packages", nlohmann::json(packages).dump(), "--json"});
+      if (include_security) fetch("security", {"security", "--json"});
+      if (include_monitoring) fetch("monitoring", monitoring_arguments);
       data["selected_app"] = selected_app; data["server"] = profile.id;
       { std::scoped_lock lock(data_mutex); pending_data = data; pending_kind = "all"; }
       return across::ProcessResult{failed ? 1 : 0, "", false};
+    });
+  }
+
+  void accept_monitoring(const nlohmann::json& data) {
+    const auto current = data.value("host", nlohmann::json::object());
+    host_cpu = -1; network_rx_rate = network_tx_rate = 0;
+    if (!previous_host.empty() && !current.empty()) {
+      const auto total = current.value("cpu_total", std::uint64_t{0}), prior = previous_host.value("cpu_total", std::uint64_t{0});
+      const auto idle = current.value("cpu_idle", std::uint64_t{0}), prior_idle = previous_host.value("cpu_idle", std::uint64_t{0});
+      if (total > prior && idle >= prior_idle) host_cpu = std::clamp(100.0 * (1.0 - static_cast<double>(idle - prior_idle) / static_cast<double>(total - prior)), 0.0, 100.0);
+      const double elapsed = current.value("timestamp", 0.0) - previous_host.value("timestamp", 0.0);
+      auto network_rate = [&](const char* key) { const auto value = current.value(key, std::uint64_t{0}), before = previous_host.value(key, std::uint64_t{0}); return elapsed > 0 && value >= before ? static_cast<double>(value - before) / elapsed : 0.0; };
+      network_rx_rate = network_rate("rx_bytes"); network_tx_rate = network_rate("tx_bytes");
+    }
+    previous_host = current; monitoring_data = data; monitoring_updated = GetTime(); monitoring_received = static_cast<double>(std::time(nullptr)); monitoring_attempted = true;
+  }
+
+  std::vector<std::string> admin_arguments(const std::string& kind) const {
+    if (kind == "monitoring") return {kind, "--app", traffic_app.value, "--hours", traffic_hours.value, "--json"};
+    return {kind, "--json"};
+  }
+
+  void refresh_admin(const std::string& kind) {
+    if (selected < 0 || busy.load()) return;
+    if (kind == "security") security_attempted = true; else { monitoring_attempted = true; monitoring_updated = GetTime(); }
+    const auto profile = selected_server(); const auto arguments = admin_arguments(kind);
+    start_job("Refresh " + kind, [this, profile, arguments, kind](const auto&) {
+      auto result = across::Deployer(profile).server_command(arguments);
+      if (result.ok()) { std::scoped_lock lock(data_mutex); pending_data = nlohmann::json::parse(result.output); pending_kind = kind; }
+      else append_log(result.output);
+      return result;
+    });
+  }
+
+  void admin_operation(const std::string& label, std::vector<std::string> arguments, const std::string& refresh_kind = "security") {
+    if (selected < 0 || busy.load()) return;
+    arguments.push_back("--json"); const auto profile = selected_server(); const auto refresh = admin_arguments(refresh_kind);
+    start_job(label, [this, profile, arguments, refresh, refresh_kind](const auto& callback) {
+      auto result = across::Deployer(profile).server_command(arguments, callback);
+      if (!result.ok()) return result;
+      auto refreshed = across::Deployer(profile).server_command(refresh);
+      if (refreshed.ok()) { std::scoped_lock lock(data_mutex); pending_data = nlohmann::json::parse(refreshed.output); pending_kind = refresh_kind; }
+      else append_log("Refresh failed: " + refreshed.output);
+      return refreshed;
     });
   }
 
@@ -1142,6 +1212,8 @@ struct Application {
     package_scroll = 0; package_state = nlohmann::json::object();
     websites = nlohmann::json::array(); metrics = nlohmann::json::object();
     app_id.value.clear(); nginx_editor.value.clear(); domains.value.clear(); domain_only = false;
+    security_data.clear(); monitoring_data.clear(); previous_host.clear(); security_attempted = monitoring_attempted = false; process_selected = -1; security_scroll = monitoring_scroll = 0;
+    monitoring_received = security_received = 0; monitoring_scroll_drag = security_scroll_drag = false;
     manifest.value.clear(); project_root.value.clear(); show_recent_projects = false;
     const auto paths = recent_projects();
     if (!paths.empty()) {
@@ -1283,6 +1355,12 @@ struct Application {
         if (pending_data.contains("list")) websites = pending_data["list"]["apps"];
         if (pending_data.contains("metrics")) metrics = pending_data["metrics"];
         if (pending_data.contains("packages")) package_state = pending_data["packages"];
+        if (pending_data.contains("security")) {
+          security_data = pending_data["security"]; security_received = static_cast<double>(std::time(nullptr)); security_attempted = true; process_selected = -1;
+          const auto settings = security_data.value("settings", nlohmann::json::object());
+          fail_retry.value = std::to_string(settings.value("maxretry", 5)); fail_window.value = std::to_string(settings.value("findtime", 600)); fail_ban.value = std::to_string(settings.value("bantime", 3600));
+        }
+        if (pending_data.contains("monitoring")) accept_monitoring(pending_data["monitoring"]);
         if (pending_data.contains("website")) {
           const auto& website = pending_data["website"];
           domain_only = website.value("domain_only", false);
@@ -1295,6 +1373,12 @@ struct Application {
           nginx_editor.value = website["nginx"].get<std::string>(); nginx_editor.cursor = 0; nginx_editor.scroll = 0;
         }
       }
+      if (pending_kind == "security") {
+        security_data = pending_data; security_received = static_cast<double>(std::time(nullptr)); security_attempted = true; process_selected = -1;
+        const auto settings = security_data.value("settings", nlohmann::json::object());
+        fail_retry.value = std::to_string(settings.value("maxretry", 5)); fail_window.value = std::to_string(settings.value("findtime", 600)); fail_ban.value = std::to_string(settings.value("bantime", 3600));
+      }
+      if (pending_kind == "monitoring") accept_monitoring(pending_data);
       if (pending_kind == "list") websites = pending_data.at("apps");
       if (pending_kind == "metrics") metrics = pending_data;
       if (pending_kind == "packages") package_state = pending_data;
@@ -1320,6 +1404,7 @@ struct Application {
       watcher_running = false;
     }
     if (refresh_requested && !busy.load()) refresh_all();
+    if (page == 11 && monitoring_auto && monitoring_attempted && !busy.load() && GetTime() - monitoring_updated >= 30) refresh_admin("monitoring");
   }
 
   void start_watch() {
@@ -1860,6 +1945,8 @@ void run_file_browser(const across::ServerProfile& server,
   }
 }
 
+#include "admin.hpp"
+
 void draw_management(Application& app, float x, float width) {
   const bool enabled = app.selected >= 0 && !app.busy.load();
   const float half = (width - 32.0F) / 2;
@@ -1892,7 +1979,7 @@ void draw_management(Application& app, float x, float width) {
       return result;
     });
   };
-  const std::vector<std::string> tabs{"Projects", "Websites", "Domains", "Pipelines", "Resources", "Firewall", "Connection", "Packages", "Files"};
+  const std::vector<std::string> tabs{"Projects", "Websites", "Domains", "Pipelines", "Resources", "Firewall", "Connection", "Packages", "Files", "Security", "Monitoring"};
   float tab_x = x;
   for (int index = 0; index < static_cast<int>(tabs.size()); ++index) {
     const float span = measure_text(tabs[static_cast<std::size_t>(index)], 12).x + 22;
@@ -2009,6 +2096,10 @@ void draw_management(Application& app, float x, float width) {
     if (!app.file_browser) app.file_browser = std::make_unique<FileBrowser>(app.selected_server(),
         app.project_root.value.empty() ? std::filesystem::current_path() : std::filesystem::path{app.project_root.value}, "/tmp");
     draw_file_browser(*app.file_browser, {x, 145, width, static_cast<float>(GetScreenHeight()) - 215});
+  } else if (app.page == 10) {
+    draw_security_page(app, x, width);
+  } else if (app.page == 11) {
+    draw_monitoring_page(app, x, width);
   } else if (app.page == 1) {
     if (button({x + width - 150, 147, 150, 38}, "Refresh", enabled)) refresh("list");
     draw_text("APPLICATION", x, 207, 11, kFaint); draw_text("TYPE", x + 210, 207, 11, kFaint); draw_text("DOMAINS", x + 305, 207, 11, kFaint);
@@ -2281,7 +2372,7 @@ int main(int argument_count, char** arguments) {
       ClearBackground(kBackground);
       draw_server_sidebar(app, height);
 
-      const std::vector<std::string> page_titles{"Projects", "Websites", "Domains", "Pipelines", "Resources", "Firewall", "Connection", "Nginx", "Packages", "Files"};
+      const std::vector<std::string> page_titles{"Projects", "Websites", "Domains", "Pipelines", "Resources", "Firewall", "Connection", "Nginx", "Packages", "Files", "Security", "Monitoring"};
       draw_text(page_titles.at(static_cast<std::size_t>(app.page)), content_x, 27.0F, 25.0F, kText,
                 FontWeight::semibold);
       const std::string status = app.busy.load()

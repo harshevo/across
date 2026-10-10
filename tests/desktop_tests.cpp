@@ -11,6 +11,14 @@ int main() {
     if (!condition) throw std::runtime_error(message);
   };
   try {
+    const nlohmann::json traffic{{"pages", {{{"name", "/old"}, {"last_seen", 100.0}, {"requests", 500}}, {{"name", "/latest"}, {"last_seen", 200.0}, {"requests", 1}}}}};
+    const auto table = monitoring_table(traffic, 1, "");
+    require(table.rows.size() == 2 && table.rows[0][0] == "/latest", "Page table must prioritize freshness over request volume");
+    require(monitoring_table(traffic, 1, "/old").rows.size() == 1, "Table filter must preserve matching rows");
+    require(table_scroll_limit(5) == 0 && table_scroll_limit(12) == 7, "Tables must show five rows and scroll the remaining rows");
+    const nlohmann::json ssh{{"connections", {{"output", "State Recv-Q Send-Q Local Peer Process\nESTAB 0 0 127.0.0.1:22 203.0.113.2:4321 sshd\n"}}}, {"ssh_activity", {{"output", "2026-10-11T01:00:00+00:00 host sshd[1]: Accepted publickey for root from 203.0.113.3 port 22\n2026-10-11T02:00:00+00:00 host sshd[1]: Failed password for root from 203.0.113.4 port 22\n"}}}};
+    const auto connections = connection_table(ssh);
+    require(connections.rows.size() == 3 && connections.rows[0][0] == "Active now" && connections.rows[1][2] == "203.0.113.4", "Active connections and newest SSH activity must come first");
     across::ServerProfile profile;
     profile.id = "test"; profile.label = "Test"; profile.host = "127.0.0.1"; profile.user = "test";
     across::ConfigStore{}.save_server(profile);
@@ -32,6 +40,12 @@ int main() {
       require(app.manifest.value == std::filesystem::canonical(manifest_path).string(), "Project manifest was not restored");
       require(app.recent_projects().size() == 1, "Recent projects should not duplicate");
       require(app.refresh_requested, "Startup must request live refresh");
+      app.accept_monitoring({{"host", {{"timestamp", 100.0}, {"cpu_total", 1000}, {"cpu_idle", 500}, {"rx_bytes", 1000}, {"tx_bytes", 2000}}}});
+      require(app.host_cpu < 0, "CPU needs two samples");
+      app.accept_monitoring({{"host", {{"timestamp", 102.0}, {"cpu_total", 1200}, {"cpu_idle", 550}, {"rx_bytes", 1400}, {"tx_bytes", 2200}}}});
+      require(app.host_cpu == 75.0 && app.network_rx_rate == 200.0 && app.network_tx_rate == 100.0, "CPU or network rate used cumulative counters instead of sample deltas");
+      app.accept_monitoring({{"host", {{"timestamp", 104.0}, {"cpu_total", 20}, {"cpu_idle", 10}, {"rx_bytes", 10}, {"tx_bytes", 10}}}});
+      require(app.host_cpu < 0 && app.network_rx_rate == 0 && app.network_tx_rate == 0, "Server restart must reset counter-derived metrics");
       std::filesystem::create_directory(root / "new-project");
       app.select_project_folder(root / "new-project");
       require(app.manifest.value.empty() && app.app_id.value == "new-project", "New folder inherited prior project settings");

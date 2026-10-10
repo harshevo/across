@@ -1,3 +1,8 @@
+#include <arpa/inet.h>
+#include <csignal>
+#include <cmath>
+#include <map>
+#include <set>
 #include <fcntl.h>
 #include <pwd.h>
 #include <sys/file.h>
@@ -421,7 +426,9 @@ std::string nginx_configuration(const ProjectManifest& manifest) {
   if (tls && manifest.nginx.redirect_http_to_https) {
     output << "server {\n  listen 80;\n  listen [::]:80;\n  server_name";
     for (const auto& domain : manifest.nginx.domains) output << ' ' << domain;
-    output << ";\n  return 301 https://$host$request_uri;\n}\n\n";
+    output << ";\n";
+    if (fs::exists(fs::path(kAppsRoot) / manifest.app_id / "traffic-enabled")) output << "  access_log /var/log/nginx/across-" << manifest.app_id << ".access.jsonl across_json;\n";
+    output << "  return 301 https://$host$request_uri;\n}\n\n";
   }
   output << "server {\n";
   if (tls) {
@@ -442,6 +449,10 @@ std::string nginx_configuration(const ProjectManifest& manifest) {
          << "  client_max_body_size " << manifest.nginx.client_max_body_mb << "m;\n"
          << "  add_header X-Content-Type-Options nosniff always;\n"
          << "  add_header Referrer-Policy strict-origin-when-cross-origin always;\n\n";
+  if (fs::exists(fs::path(kAppsRoot) / manifest.app_id / "traffic-enabled"))
+    output << "  access_log /var/log/nginx/across-" << manifest.app_id << ".access.jsonl across_json;\n";
+  const auto blocked = fs::path(kAppsRoot) / manifest.app_id / "blocked-ips.json";
+  if (fs::is_regular_file(blocked)) for (const auto& ip : nlohmann::json::parse(read_file(blocked)).get<std::vector<std::string>>()) output << "  deny " << ip << ";\n";
   if (manifest.type == "static") {
     output << "  root " << kAppsRoot << '/' << manifest.app_id << "/current/"
            << manifest.artifact_dir << ";\n"
@@ -555,6 +566,11 @@ void restore_nginx_config(const fs::path& path,
 }
 
 void install_nginx_config(const ProjectManifest& manifest) {
+  if (fs::is_regular_file(fs::path(kNginxRoot) / "00-across-domain-only.conf")) {
+    for (const auto& domain : manifest.nginx.domains)
+      if (domain.find(':') != std::string::npos || std::regex_match(domain, std::regex("^[0-9.]+$")))
+        throw std::runtime_error("Domain-only access is enabled; use a hostname instead of an IP");
+  }
   const fs::path path = nginx_config_path(manifest.app_id);
   ensure_domains_available(manifest, path);
   std::optional<std::string> previous;
@@ -1263,7 +1279,12 @@ int firewall(int argc, char** argv) {
   if (action == "enable") {
     const auto ssh_port = option_value(argc, argv, "--ssh-port");
     across::validate_firewall_rule("allow", ssh_port, "tcp");
-    ensure_ok(run({"ufw", "insert", "1", "allow", ssh_port + "/tcp"}), "Preserve SSH access");
+    ensure_ok(run({"ufw", "--force", "delete", "deny", ssh_port + "/tcp"}), "Remove conflicting SSH block");
+    ensure_ok(run({"ufw", "prepend", "allow", ssh_port + "/tcp"}), "Preserve SSH access");
+    if (fs::is_directory(kAppsRoot) && !fs::is_empty(kAppsRoot)) {
+      ensure_ok(run({"ufw", "allow", "80/tcp"}), "Preserve website HTTP access");
+      ensure_ok(run({"ufw", "allow", "443/tcp"}), "Preserve website HTTPS access");
+    }
     ensure_ok(run({"ufw", "--force", "enable"}), "Enable firewall");
     ensure_ok(run({"ufw", "status", "numbered"}), "Firewall status");
     return 0;
@@ -1271,15 +1292,22 @@ int firewall(int argc, char** argv) {
   if (action == "status") { ensure_ok(run({"ufw", "status", "numbered"}), "Firewall status"); return 0; }
   const auto port = option_value(argc, argv, "--port");
   const auto protocol = option_value(argc, argv, "--protocol");
-  across::validate_firewall_rule(action, port, protocol);
+  across::validate_firewall_rule(action == "unblock" ? "delete" : action, port, protocol);
   const auto ssh_port = option_value(argc, argv, "--ssh-port");
   across::validate_firewall_rule("allow", ssh_port, "tcp");
   if (port == ssh_port && protocol == "tcp" && action != "allow") throw std::runtime_error("Cannot block or delete the active SSH port");
   if (action == "delete") ensure_ok(run({"ufw", "--force", "delete", "allow", port + "/" + protocol}), "Delete firewall allow rule");
-  else ensure_ok(run({"ufw", action, port + "/" + protocol}), "Firewall rule");
+  else if (action == "unblock") ensure_ok(run({"ufw", "--force", "delete", "deny", port + "/" + protocol}), "Remove port block");
+  else {
+    ensure_ok(run({"ufw", "--force", "delete", action == "allow" ? "deny" : "allow", port + "/" + protocol}), "Remove conflicting port rule");
+    ensure_ok(run({"ufw", "prepend", action, port + "/" + protocol}), "Firewall rule");
+  }
   ensure_ok(run({"ufw", "status", "numbered"}), "Firewall status");
   return 0;
 }
+
+#include "security.hpp"
+#include "monitoring.hpp"
 
 void usage() {
   std::cout
@@ -1331,6 +1359,10 @@ int main(int argc, char** argv) {
     if (command == "nginx-save") return edit_nginx(argc, argv);
     if (command == "tls-issue") return manage_tls(argc, argv, false);
     if (command == "tls-renew") return manage_tls(argc, argv, true);
+    if (command == "security") return security_status();
+    if (command == "security-action") return security_action(argc, argv);
+    if (command == "monitoring") return monitoring(argc, argv);
+    if (command == "traffic-logging") return traffic_logging(argc, argv);
     if (command == "metrics") return server_metrics();
     if (command == "resource-limits") return resource_limits(argc, argv);
     if (command == "firewall") return firewall(argc, argv);

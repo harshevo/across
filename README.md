@@ -264,3 +264,35 @@ and restores the previous configuration if validation or reload fails.
 **Restore IP access** restores the previous default site. Websites configured
 with an IP hostname must first be switched to a domain. This is hostname
 routing, not a firewall that prevents connecting to the origin with a valid hostname.
+
+## Security and Monitoring
+
+**Security** reads actual server accounts, processes, listening ports, active TCP
+connections, SSH sessions and journal events, UFW rules, Fail2ban jails, package
+updates, and deployed website certificates. It provides process TERM/KILL,
+website restart, port allow/block/removal, server IP and website visitor blocking,
+SSH-key-only authentication, and persistent IPv4/IPv6 ping controls. PID 1,
+SSH/system managers, the operation's ancestors, and the current administrator IP
+are protected. Process actions require the selected process's start identity.
+
+Fail2ban's SSH jail uses the system journal. You can install it and edit failed
+attempt count, detection window, and ban duration. The current SSH administrator
+is added to the jail's trusted IPs before activation. A server firewall IP block
+works on the connecting peer; website visitor blocks work on the restored visitor
+IP behind Cloudflare. ICMP ping is per IP, and Cloudflare's public proxy answers
+are controlled by Cloudflare, not the origin server.
+
+**Monitoring** provides server CPU samples, RAM/disk/interface counters and
+network throughput, plus requests, visitor IPs, response bytes, error counts,
+average/p95 latency, status codes, per-project and per-page statistics, and recent
+request details. Device/browser labels are inferred from the reported user-agent.
+Enable logging for the selected website first. Only published Cloudflare peer
+ranges may supply the visitor-IP header. Direct clients cannot spoof it.
+
+Traffic covers requests reaching the origin, so Cloudflare cache hits are not
+counted. Historical traffic before logging was enabled is unavailable. Reports
+scan current and previous daily logs (up to 8 MiB each), flag partial scans, and
+support 1–48 hour windows. Log rotation retains 30 daily archives. Export saves
+the complete captured JSON report locally; optional auto-refresh runs every 30
+seconds while the Monitoring tab is open. Network throughput and CPU utilization
+need two successive samples.
