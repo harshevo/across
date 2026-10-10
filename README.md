@@ -15,9 +15,9 @@ Across's desktop, deployment client, and server backend are written in C++20.
 They orchestrate OpenSSH, rsync, Nginx, PM2, Certbot, UFW, and systemd on the
 host. The backend runs on demand over SSH; no extra public API port is needed.
 
-The desktop has dedicated Projects, Websites, Domains & HTTPS, Files, Pipelines,
-Resources, Firewall, Packages, and Connection screens. Deploy Node.js, static, and reverse
-proxy websites, manage multiple VPS profiles and websites, change Nginx settings
+The desktop has dedicated Projects, Websites, Domains, Files, Pipelines,
+Resources, Firewall, Packages, Connection, Security, and Monitoring screens.
+Deploy Node.js, static, and reverse proxy websites, manage multiple VPS profiles and websites, change Nginx settings
 or edit its config, point Cloudflare DNS, issue and renew certificates, inspect
 VPS resources, set service limits, and manage host firewall rules.
 
@@ -27,7 +27,29 @@ domain and HTTPS settings, resources, and package versions. **Refresh all** in
 the header repeats these live checks; partial failures appear in Activity.
 The Projects screen's **Recent projects** menu is saved separately for each server.
 
-## Build
+## Contents
+
+- [Install and launch the desktop](#install-and-launch-the-desktop)
+- [Prepare the VPS and permissions](#prepare-the-vps-and-permissions)
+- [Connect and install the server backend](#connect-and-install-the-server-backend)
+- [Deploy your first website](#deploy-your-first-website)
+- [App navigation](#app-navigation)
+- [VPS packages](#vps-packages)
+- [Files and folders](#desktop-file-and-folder-sharing)
+- [Project manifest and build location](#project-manifest)
+- [Domains, HTTPS, and website administration](#website-administration)
+- [Security and monitoring](#security-and-monitoring)
+- [Persistent storage and backups](#persistent-storage-and-backups)
+- [Troubleshooting](#troubleshooting)
+- [CLI operations](#operations)
+- [CI/CD](#cicd)
+
+## Install and launch the desktop
+
+Run these commands on your **local machine**, from the Across source directory.
+On macOS, install the Xcode Command Line Tools if a C++ compiler is not available
+(`xcode-select --install`), and make sure CMake and rsync are on your PATH.
+The first build needs Internet access to fetch dependencies.
 
 Requirements: CMake 3.20+, a C++20 compiler, OpenSSH, and rsync. Raylib and the
 JSON library are fetched at pinned versions and verified by SHA-256.
@@ -44,29 +66,217 @@ Launch the desktop application:
 open ./build/Across.app
 ```
 
+On Linux, launch `./build/across-desktop` instead. The native folder picker is
+currently implemented on macOS; Linux builds use the available path fields.
+You can copy `build/Across.app` into `/Applications` on macOS. Updating the bundle
+preserves the settings stored in your user profile.
+
 The macOS bundle includes the remote CLI source needed for server bootstrap, so
 the `.app` can be moved independently of the source checkout. The desktop UI
 bundles Inter Regular and Semibold rather than relying on Raylib's default font
 or a system-installed typeface. Inter's license is included at
 [assets/fonts/INTER-LICENSE.txt](assets/fonts/INTER-LICENSE.txt).
 
-## First server
+## Prepare the VPS and permissions
 
-The desktop flow is: save a server in **Connection**, choose packages in
-**Packages**, click **Install backend** in Connection, select an `across.json`,
-and click **Deploy**. The equivalent local CLI flow is:
+Use an Ubuntu or Debian VPS with systemd, OpenSSH, and outbound Internet access.
+Ubuntu 22.04+ or Debian 12+ provides the recommended C++20 build toolchain.
+Bootstrap installs its build tools automatically; you do not need to compile
+Across manually on the VPS. Containers without systemd and other Linux
+distributions are not supported by the automatic setup flow.
+
+### Network access
+
+Configure the provider's firewall/security group before connecting:
+
+| Port | Who needs access | Purpose |
+|---|---|---|
+| SSH port, usually TCP 22 | Your administrator IP and any CI deployment runner | App connection, setup, and file transfers |
+| TCP 80 | Public Internet for a public website | HTTP and Let's Encrypt validation |
+| TCP 443 | Public Internet for a public website | HTTPS |
+
+Across's **Firewall** tab manages UFW on the VPS. It cannot change your cloud
+provider's firewall. No Across API port is required. Node application ports,
+such as 4100, should remain private; Nginx forwards website traffic to them.
+Bind the application to `127.0.0.1` where its framework supports this.
+If DNS has an AAAA record, IPv6 must also reach the correct VPS and allow 80/443.
+
+### SSH account
+
+Use an existing administrator account such as `ubuntu`, `debian`, or `root`, or
+create a dedicated account such as `across-admin`. Across authenticates with an
+SSH private key or your SSH agent. Password prompts and interactive sudo prompts
+are not supported.
+
+For a new account, run the following in an existing administrator session on the
+**VPS**. Replace the public-key placeholder with your actual public key. Keep
+your existing session open until the new login has been tested.
+
+```sh
+sudo adduser --disabled-password --gecos '' across-admin
+sudo install -d -m 0700 -o across-admin -g across-admin /home/across-admin/.ssh
+printf '%s\n' 'YOUR_SSH_PUBLIC_KEY' | sudo tee /home/across-admin/.ssh/authorized_keys > /dev/null
+sudo chown across-admin:across-admin /home/across-admin/.ssh/authorized_keys
+sudo chmod 0600 /home/across-admin/.ssh/authorized_keys
+```
+
+Across needs administrator privileges to install packages, write Nginx and
+systemd configuration, issue certificates, and manage the firewall. For a
+non-root account, its current automatic setup requires **passwordless sudo**.
+Run `sudo visudo -f /etc/sudoers.d/across-admin` and add:
+
+```sudoers
+across-admin ALL=(ALL:ALL) NOPASSWD: ALL
+```
+
+Then validate and secure the file:
+
+```sh
+sudo chmod 0440 /etc/sudoers.d/across-admin
+sudo visudo -cf /etc/sudoers.d/across-admin
+```
+
+This grants full administrator access to anyone holding that account's SSH key.
+Use a dedicated key and protect it. The current installer invokes multiple
+privileged tools and shell scripts; a sudo rule allowing only `across-server`
+is insufficient for bootstrap. A root SSH account does not need this sudo rule.
+The separate `across` service account is created automatically for builds and
+Node processes; it has no login shell and should not be used as the SSH account.
+
+On your **local machine**, protect the private key and test the account:
+
+```sh
+chmod 0600 /path/to/private-key
+ssh -i /path/to/private-key -p 22 across-admin@203.0.113.10
+```
+
+Check the host fingerprint against your provider's console when accepting the
+first SSH connection. Inside that new VPS session, verify:
+
+```sh
+id
+sudo -n true
+```
+
+`sudo -n true` must succeed without a password for a non-root account.
+Do not make project or server directories world-writable with `chmod 777`.
+
+### Files, application permissions, and secrets
+
+- Local project files must be readable by the user running Across. Saving a
+  manifest or editing a local file also requires write permission there.
+- Uploads, downloads, and VPS file edits use the **SSH account's filesystem
+  permissions**, without automatic sudo. A successful server connection does
+  not make every file writable in the Files tab.
+- Deployment setup manages `/var/lib/across` ownership itself. Application
+  installs, builds, and Node processes run as the unprivileged `across` user;
+  Nginx and system administration remain privileged operations.
+- `.env`, `.env.*`, private keys, and Git metadata are excluded from deployments.
+  Across does not provide a secrets editor or automatically load an external
+  environment file. If your app needs secrets, configure an explicit server-side
+  loading mechanism in its start command or application, with files readable
+  only by the required service account. Do not put secrets in `across.json`.
+
+## Connect and install the server backend
+
+In the desktop app:
+
+1. Click **New server** and enter a profile name, VPS address, SSH username,
+   SSH port, and private-key path. Leave the key path empty to use your SSH agent.
+2. Choose rsync, SCP, or SFTP for Files transfers and save the profile.
+   Deployment and backend setup still require rsync on both machines.
+3. In **Packages**, select the required software. A Node website normally needs
+   Nginx, Node.js, npm, and PM2; a static website needs Nginx.
+4. Open **Connection** and click **Install backend**. Across connects over SSH,
+   installs build prerequisites, uploads its bundled server source, builds the
+   backend, and installs `/usr/local/bin/across-server` and selected packages.
+5. Check **Activity** for success or errors. Use the Connection checks and
+   **Refresh all** to load the live server inventory.
+
+Initial setup may take several minutes. It is an installation step for each VPS,
+not a command you need to run before every deployment. Run **Install backend**
+again after upgrading Across when new server commands are needed.
+
+Equivalent commands, run on your **local machine**:
 
 ```sh
 ./build/across server add production \
-  --host 203.0.113.10 --user ubuntu --identity /path/to/key.pem
+  --host 203.0.113.10 --user across-admin --port 22 \
+  --identity /path/to/private-key
 ./build/across bootstrap production
 ./build/across doctor production
+```
+
+Across never stores passwords or private-key contents. Profiles store the path
+to the optional private key. Its own known-hosts file accepts a new host key on
+first use and rejects later changes. The initial terminal SSH check above lets
+you verify the host independently; it does not populate Across's known-hosts file.
+
+## Deploy your first website
+
+1. Select your server and open **Projects**.
+2. Click **Select folder** and choose your local project directory. Across fills
+   its path and loads `across.json` if it exists. For a new project, enter the
+   settings and click **Save** to create that file. Choosing the folder alone
+   does not create a manifest.
+3. Choose a unique application ID and website type: Node, static, or proxy.
+   For Node, configure install/build/start commands, an unused application port
+   between 1024 and 65535, and a working health-check path. For example, use port
+   4100 and `/` if your application has no `/health` endpoint.
+4. Add the actual domain names and choose **Build on: VPS** or **Local machine**.
+   Save the manifest, then click **Deploy**. Watch Activity for build output and
+   the final health-check result.
+5. Open **Websites** and select the deployed app. Confirm its hostnames and
+   application settings. Point your DNS A record to the VPS IPv4 address using
+   your DNS provider or the Cloudflare controls in **Domains**.
+6. Allow TCP 80 and 443 in both the provider firewall and UFW. Once every
+   configured hostname resolves and reaches this VPS, open **Domains**, provide
+   your certificate-account email, and click **Add HTTPS**. Issuance accepts
+   Let's Encrypt's subscriber terms. Open the domain using HTTPS to verify it.
+7. In Domains, optionally use **Block IP access** to reject the default IP page
+   for the selected server. This applies to all its websites; see the details
+   under [website administration](#website-administration).
+8. Open **Monitoring**, select the project, enable website logging, and refresh
+   after making a few website requests. Traffic history begins when logging is
+   enabled.
+
+For a CLI deployment after saving the manifest:
+
+```sh
 ./build/across deploy production /path/to/project/across.json
 ```
 
-Across never stores passwords or private-key contents. Profiles only store the
-path to an optional private key. SSH agent authentication also works. A private
-known-hosts file uses trust-on-first-use and rejects later host-key changes.
+Your start command must keep the server process running, listen on the configured
+port, and return a successful response at the health-check path. For VPS builds,
+the required runtime and build tools must be installed on the VPS. For local
+builds, they must also be installed locally. Node versions supplied by the
+operating system may differ from your application's required version; check
+**Packages** before deploying.
+
+## App navigation
+
+| Tab or control | What to do there |
+|---|---|
+| Server sidebar | Switch VPS profiles; each has its own connection settings and recent projects |
+| Projects | Select a folder, save its manifest, deploy, or watch local changes |
+| Websites | Select deployed apps and manage their Nginx settings |
+| Domains | Configure DNS, issue/renew HTTPS, and control default IP access |
+| Files | Browse local/VPS folders, transfer files, and edit text files |
+| Pipelines | Generate a GitHub Actions deployment workflow locally |
+| Resources | Read VPS health and configure service CPU/memory limits |
+| Firewall | View and manage UFW ports and rules |
+| Connection | Edit SSH details, check connectivity, and install/update the backend |
+| Packages | Select server packages, install them, and inspect versions |
+| Security | Inspect SSH activity, accounts, processes, and server protection settings |
+| Monitoring | Inspect traffic, visitors, pages, response times, and host metrics |
+| Refresh all | Reload the selected server's inventory and settings |
+| Activity | See operation output and individual refresh failures |
+
+Across restores the selected profile, tab, and recent project paths when reopened,
+then fetches the server's live data. Local project source is not downloaded from
+the server automatically. Use **Recent projects** to reopen a saved manifest;
+use **Refresh all** if deployed websites or domain settings appear out of date.
+Security and Monitoring have their own refresh controls.
 
 ## VPS packages
 
@@ -285,7 +495,13 @@ are controlled by Cloudflare, not the origin server.
 **Monitoring** provides server CPU samples, RAM/disk/interface counters and
 network throughput, plus requests, visitor IPs, response bytes, error counts,
 average/p95 latency, status codes, per-project and per-page statistics, and recent
-request details. Device/browser labels are inferred from the reported user-agent.
+request details. Tables have aligned columns, a five-row viewport, and a visible
+scrollbar; scroll within a table to read more rows. Request and grouped traffic
+views place the latest activity first. **Updated** shows when the app received
+the report, while **Last seen** describes the traffic event. Timestamps are shown
+in the desktop machine's local time. The Security SSH table places current TCP
+connections before its newest journal events. Device/browser labels are inferred
+from the reported user-agent.
 Enable logging for the selected website first. Only published Cloudflare peer
 ranges may supply the visitor-IP header. Direct clients cannot spoof it.
 
@@ -296,3 +512,68 @@ support 1–48 hour windows. Log rotation retains 30 daily archives. Export save
 the complete captured JSON report locally; optional auto-refresh runs every 30
 seconds while the Monitoring tab is open. Network throughput and CPU utilization
 need two successive samples.
+
+## Persistent storage and backups
+
+Across currently uses JSON files, deployment directories, and native system
+configuration/logs. It does not use SQLite or another database.
+
+| Location | Contents |
+|---|---|
+| macOS: `~/Library/Application Support/Across/servers.json` | Server profiles, key paths, transfer preferences, and package selections |
+| macOS: `~/Library/Application Support/Across/desktop.json` | Selected server/tab and recent project manifest paths per server |
+| Same configuration folder: `known_hosts` | Across's trusted SSH host keys |
+| Linux: `~/.config/across/` (or `$XDG_CONFIG_HOME/across/`) | Equivalent client configuration files |
+| Project: `across.json` | Deployment commands, paths, domains, and website settings |
+| VPS: `/var/lib/across/apps/<app-id>/` | Saved manifest, website overrides, releases, current release link, and app settings |
+| VPS: `/var/lib/across/.pm2/` | Managed Node process state |
+| VPS: `/var/log/nginx/across-<app-id>.access.jsonl` | Website request history when logging is enabled |
+| VPS: system journal | SSH and service activity, subject to the system's retention policy |
+| VPS: `/etc/nginx/`, `/etc/letsencrypt/`, `/etc/ufw/`, `/etc/fail2ban/`, `/etc/systemd/system/` | Native server configuration and certificates |
+
+`ACROSS_CONFIG_DIR` overrides the local configuration directory. To open the
+macOS directory in Finder, press **Command+Shift+G** and paste
+`~/Library/Application Support/Across/`.
+
+Back up the local configuration folder, your project manifests, and your SSH
+keys through your normal protected backup process. A provider snapshot or a
+server backup should also cover deployed app state, native configuration, and
+any database/uploads used by your website. Across does not automatically back up
+your website's database. Close the desktop before restoring its local JSON files.
+Removing a local profile does not uninstall websites from the VPS.
+
+Traffic summaries are reconstructed from access logs when refreshed. CPU and
+network rates use successive live samples; Across does not store historical host
+metrics. SSH history depends on the VPS journal, including whether that journal
+persists across reboots. JSON report export saves a snapshot, not a background
+monitoring database.
+
+## Troubleshooting
+
+| Symptom | Check or action |
+|---|---|
+| SSH permission denied | Check the username, selected private key, server `authorized_keys`, and key permissions; test the same account with `ssh` |
+| Connection times out | Check the VPS address/SSH port, provider firewall, UFW, and your current administrator IP |
+| `sudo: a password is required` | Test `sudo -n true`; configure passwordless sudo for the selected administrator account or use an authorized root account |
+| Server host key changed | Verify the replacement VPS fingerprint through the provider console before updating Across's `known_hosts`; do not blindly bypass the mismatch |
+| Install backend fails | Inspect Activity for the failing step; confirm Ubuntu/Debian, systemd, outbound package/download access, free disk space, and sufficient build memory |
+| Backend command is unknown | Install/update the backend from Connection, then refresh |
+| npm/build command fails | Check required Node version, lockfile, command, dependencies, and whether you selected local or VPS building |
+| Deployment health check fails | Check that the start command stays running, listens on the manifest port, and serves the configured health path successfully |
+| Domain shows another website or Nginx welcome page | Check DNS, the selected website's saved domains, and which server answers; use Block IP access only after domain routing works |
+| HTTPS issuance fails | Check all configured A/AAAA records, public TCP 80, Nginx validity, and the exact Certbot error in Activity |
+| Reopened app has missing/outdated websites | Select the correct server and click Refresh all; inspect Activity for SSH/backend failures and reopen local manifests through Recent projects |
+| Files upload/save permission denied | Check ownership and permissions for the SSH account; file operations do not automatically use sudo |
+| Files editor refuses to save | The file may have changed since opening, or exceed the 64 KiB text limit; reload it before editing again |
+| Monitoring is empty | Enable logging for the selected website, generate origin requests, and refresh; cached Cloudflare responses do not reach origin logs |
+| CPU says Sampling or network rate is zero | Take a second sample using Refresh traffic or enable auto-refresh |
+| Only five table rows appear | Scroll inside the table or use its right-hand scrollbar; the footer shows the visible range and total |
+
+For a read-only connection/backend check from the local CLI:
+
+```sh
+./build/across doctor production
+./build/across apps production
+```
+
+See [docs/architecture.md](docs/architecture.md) for implementation details.
