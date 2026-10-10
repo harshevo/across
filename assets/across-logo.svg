@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <title>Across ax monogram</title>
+  <rect x="24" y="24" width="464" height="464" rx="104" fill="#0c121c"/>
+  <g fill="none" stroke-width="32" stroke-linecap="round">
+    <circle cx="180" cy="256" r="62" stroke="#ebf1f9"/>
+    <path d="M242 194v124" stroke="#ebf1f9"/>
+    <path d="m298 194 100 124m0-124L298 318" stroke="#5389ff"/>
+  </g>
+</svg>

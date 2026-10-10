@@ -1,0 +1,41 @@
+# CMake and compiled output
+/build/
+/build-*/
+/cmake-build-*/
+/out/
+CMakeCache.txt
+CMakeFiles/
+CTestTestfile.cmake
+Makefile
+cmake_install.cmake
+compile_commands.json
+*.a
+*.dylib
+*.dll
+*.exe
+*.o
+*.obj
+*.so
+
+# Editors and operating systems
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Logs, coverage, and diagnostics
+*.log
+*.profraw
+*.profdata
+coverage/
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.p12
+*.pfx

@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "app_id": "my-website",
+  "name": "My website",
+  "type": "node",
+  "project_root": ".",
+  "install_command": "npm ci",
+  "build_command": "npm run build",
+  "start_command": "npm start",
+  "artifact_dir": "dist",
+  "port": 4100,
+  "health_path": "/health",
+  "health_timeout_seconds": 30,
+  "keep_releases": 5,
+  "excludes": [
+    ".next/cache",
+    "coverage"
+  ],
+  "nginx": {
+    "domains": [
+      "example.com",
+      "www.example.com",
+      "api.example.com"
+    ],
+    "upstreams": [],
+    "rate_limit_rps": 20,
+    "rate_limit_burst": 40,
+    "client_max_body_mb": 20,
+    "tls_certificate": "",
+    "tls_certificate_key": "",
+    "redirect_http_to_https": false
+  }
+}

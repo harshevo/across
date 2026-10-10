@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "app_id": "across-node-smoke",
+  "name": "Across Node smoke test",
+  "type": "node",
+  "project_root": ".",
+  "install_command": "",
+  "build_command": "",
+  "start_command": "node server.mjs",
+  "artifact_dir": "dist",
+  "port": 4198,
+  "health_path": "/health",
+  "health_timeout_seconds": 20,
+  "keep_releases": 3,
+  "excludes": [],
+  "nginx": {
+    "domains": ["across-node-smoke.invalid"],
+    "upstreams": [],
+    "rate_limit_rps": 10,
+    "rate_limit_burst": 20,
+    "client_max_body_mb": 1,
+    "tls_certificate": "",
+    "tls_certificate_key": "",
+    "redirect_http_to_https": false
+  }
+}

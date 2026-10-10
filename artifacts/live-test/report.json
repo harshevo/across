@@ -1,0 +1,46 @@
+{
+  "url": "http://178.128.144.213",
+  "build_location": "local",
+  "build_id": "FiT0gDpTAlvu-OsGLBDeZ",
+  "remote_build_id_matches": true,
+  "assets": {
+    "/_next/static/chunks/00fu74dep89ww.js": 200,
+    "/_next/static/chunks/06wqsv8v5j8r9.js": 200,
+    "/_next/static/chunks/0cz1d0mv5g_q7.js": 200,
+    "/_next/static/chunks/0p_w__bs2_j30.js": 200,
+    "/_next/static/chunks/1-spf0pakc21-.css": 200,
+    "/_next/static/chunks/1b7ss30ll50ou.js": 200,
+    "/_next/static/chunks/1tq6ppe__m8m-.js": 200,
+    "/_next/static/chunks/2evgu094glu3w.js": 200,
+    "/_next/static/chunks/turbopack-3-ry682tkyiqk.js": 200
+  },
+  "ui_checks": [
+    "directory upload/download exact 5 files",
+    "build selector save/load local and vps",
+    "backend install",
+    "deploy and redeploy local build",
+    "website list and load",
+    "trade import preview and save",
+    "invalid JSON preserved trade",
+    "calendar month navigation",
+    "journal save and reload",
+    "default plan applied to new day",
+    "custom tag and mood persistence",
+    "image attach save reload preview",
+    "clipboard unavailable handled"
+  ],
+  "bugs_fixed": [
+    "rsync directory nesting",
+    "HTTP screenshot UUID"
+  ],
+  "frontend_tests_passed": 34,
+  "lint_passed": true,
+  "across_test_suites_passed": 2,
+  "sanitizer_suites_passed": 2,
+  "untested": [
+    "TLS/domain provisioning",
+    "VPS Next.js build",
+    "firewall mutations",
+    "rollback/delete"
+  ]
+}

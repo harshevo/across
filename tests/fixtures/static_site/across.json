@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "app_id": "across-smoke",
+  "name": "Across smoke test",
+  "type": "static",
+  "project_root": ".",
+  "install_command": "",
+  "build_command": "",
+  "start_command": "",
+  "artifact_dir": "public",
+  "port": 4199,
+  "health_path": "/",
+  "health_timeout_seconds": 15,
+  "keep_releases": 3,
+  "excludes": [],
+  "nginx": {
+    "domains": ["across-smoke.invalid"],
+    "upstreams": [],
+    "rate_limit_rps": 5,
+    "rate_limit_burst": 10,
+    "client_max_body_mb": 1,
+    "tls_certificate": "",
+    "tls_certificate_key": "",
+    "redirect_http_to_https": false
+  }
+}

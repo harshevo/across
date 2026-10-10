@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "app_id": "static-site",
+  "name": "Static site",
+  "type": "static",
+  "project_root": ".",
+  "install_command": "",
+  "build_command": "",
+  "start_command": "",
+  "artifact_dir": "public",
+  "port": 4100,
+  "health_path": "/",
+  "health_timeout_seconds": 15,
+  "keep_releases": 5,
+  "excludes": [],
+  "nginx": {
+    "domains": ["static.example.com"],
+    "upstreams": [],
+    "rate_limit_rps": 30,
+    "rate_limit_burst": 60,
+    "client_max_body_mb": 10,
+    "tls_certificate": "",
+    "tls_certificate_key": "",
+    "redirect_http_to_https": false
+  }
+}

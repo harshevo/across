@@ -1,0 +1,30 @@
+{
+  "app_id": "tradelyzer",
+  "artifact_dir": ".",
+  "build_command": "npm run build:deploy",
+  "build_location": "local",
+  "deployment_dir": ".next/standalone",
+  "excludes": [],
+  "health_path": "/",
+  "health_timeout_seconds": 60,
+  "install_command": "",
+  "keep_releases": 3,
+  "name": "tradelyzer",
+  "nginx": {
+    "client_max_body_mb": 20,
+    "domains": [
+      "178.128.144.213"
+    ],
+    "rate_limit_burst": 40,
+    "rate_limit_rps": 0,
+    "redirect_http_to_https": false,
+    "tls_certificate": "",
+    "tls_certificate_key": "",
+    "upstreams": []
+  },
+  "port": 4100,
+  "project_root": "/Users/harshevo/Work/tradingjournal/frontend",
+  "start_command": "HOSTNAME=127.0.0.1 node server.js",
+  "type": "node",
+  "version": 1
+}
