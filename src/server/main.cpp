@@ -373,6 +373,7 @@ int doctor() {
   nlohmann::json result{
       {"ok", state_ready && (executable("nginx").empty() || nginx_valid)},
       {"version", ACROSS_VERSION},
+      {"environment_keys", true},
       {"user", std::string(geteuid() == 0 ? "root" : "non-root")},
       {"state_ready", state_ready},
       {"nginx_config_valid", nginx_valid},
@@ -617,18 +618,44 @@ ProcessResult run_as_service(const std::string& command,
              timeout);
 }
 
+fs::path release_environment_path(const fs::path& release) {
+  return release.parent_path().parent_path() / "environments" / (release.filename().string() + ".json");
+}
+
+void write_release_environment(const fs::path& release, const fs::path& environment_source) {
+  if (!fs::is_regular_file(environment_source)) return;
+  const auto keys = across::load_environment_keys(environment_source);
+  const auto environment_file = release_environment_path(release);
+  const auto exports_file = fs::path(environment_file.string() + ".sh");
+  fs::create_directories(environment_file.parent_path());
+  fs::permissions(environment_file.parent_path(), fs::perms::owner_all);
+  ensure_ok(run({"chown", "across:across", environment_file.parent_path().string()}), "Environment directory ownership");
+  write_file_atomically(environment_file, nlohmann::json(keys).dump(), fs::perms::owner_read | fs::perms::owner_write);
+  std::string exports;
+  for (const auto& [name, value] : keys) exports += "export " + name + "=" + across::shell_quote(value) + "\n";
+  write_file_atomically(exports_file, exports, fs::perms::owner_read | fs::perms::owner_write);
+  ensure_ok(run({"chown", "across:across", environment_file.string(), exports_file.string()}), "Environment file ownership");
+}
+
 void run_build_step(const fs::path& release, const std::string& label,
                     const std::string& command) {
   if (command.empty()) return;
   progress(label + "...");
-  const auto result = run_as_service("cd " + across::shell_quote(release.string()) +
-                                     " && " + command);
+  std::string setup;
+  const auto environment = fs::path(release_environment_path(release).string() + ".sh");
+  if (fs::is_regular_file(environment)) setup = ". " + across::shell_quote(environment.string()) + " && ";
+  const auto result = run_as_service(setup + "cd " + across::shell_quote(release.string()) + " && " + command);
   ensure_ok(result, label);
 }
 
 fs::path write_ecosystem(const ProjectManifest& manifest, const fs::path& app_root) {
   const fs::path ecosystem = app_root / "ecosystem.config.cjs";
   const std::string name = "across-" + manifest.app_id;
+  nlohmann::json environment = {{"NODE_ENV", "production"}, {"PORT", std::to_string(manifest.port)}};
+  const auto environment_file = release_environment_path(fs::canonical(app_root / "current"));
+  if (fs::is_regular_file(environment_file)) {
+    for (const auto& [key, value] : across::load_environment_keys(environment_file)) environment[key] = value;
+  }
   std::ostringstream contents;
   contents << "module.exports = { apps: [{\n"
            << "  name: " << js_quote(name) << ",\n"
@@ -636,13 +663,12 @@ fs::path write_ecosystem(const ProjectManifest& manifest, const fs::path& app_ro
            << "  script: '/bin/sh',\n"
            << "  interpreter: 'none',\n"
            << "  args: ['-lc', " << js_quote(manifest.start_command) << "],\n"
-           << "  env: { NODE_ENV: 'production', PORT: '" << manifest.port << "' },\n"
+           << "  env: " << environment.dump() << ",\n"
            << "  autorestart: true, max_restarts: 10, restart_delay: 1000,\n"
            << "  kill_timeout: 5000, listen_timeout: 10000\n"
            << "}] };\n";
   write_file_atomically(ecosystem, contents.str(),
-                        fs::perms::owner_read | fs::perms::owner_write |
-                            fs::perms::group_read);
+                        fs::perms::owner_read | fs::perms::owner_write);
   ensure_ok(run({"chown", "across:across", ecosystem.string()}),
             "ecosystem ownership");
   return ecosystem;
@@ -709,6 +735,7 @@ void remove_old_releases(const fs::path& releases, int keep) {
   });
   for (std::size_t index = static_cast<std::size_t>(keep); index < entries.size();
        ++index) {
+    fs::remove(release_environment_path(entries[index].path()));
     fs::remove_all(entries[index]);
   }
 }
@@ -769,6 +796,8 @@ int deploy(int argc, char** argv) {
     throw std::runtime_error("Uploaded source directory does not exist");
   }
   auto manifest = load_remote_manifest(manifest_path, source);
+  const auto environment_option = option_value(argc, argv, "--environment", false);
+  if (!environment_option.empty()) across::load_environment_keys(environment_option);
   AppLock lock(manifest.app_id);
   AppLock nginx_lock(".nginx-global");
   apply_website_overrides(manifest);
@@ -791,6 +820,8 @@ int deploy(int argc, char** argv) {
   const fs::path release = releases / release_id;
   const bool new_application = !previous_manifest && !fs::is_symlink(current);
   const auto clean_failed_release = [&]() {
+    fs::remove(release_environment_path(release));
+    fs::remove(fs::path(release_environment_path(release).string() + ".sh"));
     fs::remove_all(release);
     if (new_application) fs::remove_all(app_root);
   };
@@ -811,12 +842,16 @@ int deploy(int argc, char** argv) {
                   std::chrono::minutes{10}),
               "release copy");
 
+    const auto environment_source = environment_option.empty() ?
+        (fs::exists(current) ? release_environment_path(fs::canonical(current)) : fs::path{}) : fs::path(environment_option);
+    write_release_environment(release, environment_source);
     if (manifest.type != "proxy" && manifest.build_location == "vps") {
       run_build_step(release, "Installing dependencies", manifest.install_command);
       run_build_step(release, "Building application", manifest.build_command);
     } else if (manifest.type != "proxy") {
       progress("Using locally built application; skipping VPS install and build...");
     }
+    fs::remove(fs::path(release_environment_path(release).string() + ".sh"));
     if (manifest.type == "static" &&
         !fs::is_directory(release / manifest.artifact_dir)) {
       throw std::runtime_error("Static artifact directory was not produced: " +

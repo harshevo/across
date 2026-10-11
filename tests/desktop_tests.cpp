@@ -31,6 +31,9 @@ int main() {
       Application app;
       app.select_project_folder(root / "project");
       require(app.app_id.value == "example", "Folder selection must load an existing manifest");
+      app.github_environment["owner/saved"]["DATABASE_URL"] = "private-desktop-test";
+      require(app.github_env_value.secret && app.github_env_value.multiline_paste, "Environment editor must mask values and preserve multiline clipboard content");
+      app.github_repo.value = "owner/saved"; app.github_folder.value = (root / "project").string(); app.branch.value = "release";
       app.page = 2; app.save_desktop_state();
     }
     {
@@ -40,12 +43,36 @@ int main() {
       require(app.manifest.value == std::filesystem::canonical(manifest_path).string(), "Project manifest was not restored");
       require(app.recent_projects().size() == 1, "Recent projects should not duplicate");
       require(app.refresh_requested, "Startup must request live refresh");
+      require(app.github_repo.value == "owner/saved" && app.branch.value == "release" && app.github_folder.value == (root / "project").string(), "Server selection during startup must preserve saved GitHub settings");
+      require(app.github_environment.empty(), "Secret values must not persist in desktop state");
+      app.github_repo.value.clear(); app.github_folder.value.clear(); app.branch.value = "main";
+      app.refresh_requested = false;
+      app.show_activity = true; app.github_loading = true;
+      app.pending_kind = "github";
+      app.pending_data = {{"account", "tester"}, {"repositories", {{{"name", "owner/site"}, {"branch", "main"}}}}};
+      app.check_finished_jobs();
+      require(app.github_data.at("account") == "tester" && !app.github_loading, "Sign-in completion must update connected status");
+      require(!app.show_activity && app.show_github_repos, "Sign-in must show loaded repositories automatically");
+      require(!app.github_project_ready(), "Deployment must require a selected repository");
+      app.github_repo.value = "owner/site";
+      require(!app.github_project_ready(), "Deployment must require a repository folder");
+      app.github_folder.value = (root / "project").string();
+      require(app.github_project_ready(), "Saved manifest should enable GitHub deployment");
+      app.pipeline_manifest.value = "missing.json";
+      require(!app.github_project_ready(), "Missing manifest must prevent deployment");
+      app.pipeline_manifest.value = "across.json";
       app.accept_monitoring({{"host", {{"timestamp", 100.0}, {"cpu_total", 1000}, {"cpu_idle", 500}, {"rx_bytes", 1000}, {"tx_bytes", 2000}}}});
       require(app.host_cpu < 0, "CPU needs two samples");
       app.accept_monitoring({{"host", {{"timestamp", 102.0}, {"cpu_total", 1200}, {"cpu_idle", 550}, {"rx_bytes", 1400}, {"tx_bytes", 2200}}}});
       require(app.host_cpu == 75.0 && app.network_rx_rate == 200.0 && app.network_tx_rate == 100.0, "CPU or network rate used cumulative counters instead of sample deltas");
       app.accept_monitoring({{"host", {{"timestamp", 104.0}, {"cpu_total", 20}, {"cpu_idle", 10}, {"rx_bytes", 10}, {"tx_bytes", 10}}}});
       require(app.host_cpu < 0 && app.network_rx_rate == 0 && app.network_tx_rate == 0, "Server restart must reset counter-derived metrics");
+      std::filesystem::create_directory(root / "github-project");
+      auto imported_project = project; imported_project.project_root = "/old-machine/project";
+      { std::ofstream output(root / "github-project/across.json"); output << nlohmann::json(imported_project).dump(); }
+      app.github_folder.value = (root / "github-project").string();
+      app.select_project_folder(app.github_folder.value);
+      require(app.project_root.value == std::filesystem::canonical(root / "github-project").string(), "GitHub folder selection must load old absolute paths inside the clone");
       std::filesystem::create_directory(root / "new-project");
       app.select_project_folder(root / "new-project");
       require(app.manifest.value.empty() && app.app_id.value == "new-project", "New folder inherited prior project settings");

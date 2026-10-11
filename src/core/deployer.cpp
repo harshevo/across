@@ -19,6 +19,7 @@
 
 #include "across/config.hpp"
 #include "across/packages.hpp"
+#include "across/management.hpp"
 
 namespace across {
 namespace {
@@ -156,6 +157,16 @@ ProcessResult Deployer::bootstrap(const OutputCallback& on_output) const {
 ProcessResult Deployer::deploy(const ProjectManifest& manifest,
                                const OutputCallback& on_output) const {
   validate_manifest(manifest);
+  std::filesystem::path environment_path;
+  if (const auto* configured = std::getenv("ACROSS_ENV_FILE"); configured && *configured) {
+    environment_path = configured;
+    load_environment_keys(environment_path);
+    const auto backend = doctor();
+    if (!backend.ok()) return failure_from(backend, "Environment deployment backend check failed");
+    const auto capabilities = nlohmann::json::parse(backend.output, nullptr, false);
+    if (capabilities.is_discarded() || !capabilities.value("environment_keys", false))
+      throw std::runtime_error("Update the VPS backend from Connection > Install backend before deploying environment keys");
+  }
   auto upload_root = manifest.project_root;
   if (manifest.build_location == "local" && manifest.type != "proxy") {
     for (const auto& step : {std::pair{"Installing dependencies locally", manifest.install_command},
@@ -186,7 +197,7 @@ ProcessResult Deployer::deploy(const ProjectManifest& manifest,
 
   std::vector<std::string> excludes{
       ".git", ".github", ".across", ".DS_Store", ".env",
-      ".env.*", "*.pem", "*.key"};
+      ".env.*", "*.pem", "*.key", ".across-environment.json", ".across-build-environment"};
   if (manifest.build_location != "local") {
     excludes.insert(excludes.end(), {"node_modules", "build", "build-*"});
   }
@@ -209,10 +220,19 @@ ProcessResult Deployer::deploy(const ProjectManifest& manifest,
     return failure_from(manifest_upload, "Manifest upload failed");
   }
 
-  auto deployed = transport_.execute_privileged(
-      {"/usr/local/bin/across-server", "deploy", "--manifest",
+  std::vector<std::string> arguments{"/usr/local/bin/across-server", "deploy", "--manifest",
        remote_root + "/across.json", "--source", remote_root + "/source",
-       "--release", release, "--json"},
+       "--release", release, "--json"};
+  if (!environment_path.empty()) {
+    auto uploaded = transport_.upload(environment_path, remote_root + "/environment.json");
+    if (!uploaded.ok()) {
+      transport_.execute({"rm", "-rf", remote_root}, std::chrono::seconds{30});
+      return {1, "Environment upload failed", false};
+    }
+    arguments.insert(arguments.end(), {"--environment", remote_root + "/environment.json"});
+  }
+  auto deployed = transport_.execute_privileged(
+      arguments,
       std::chrono::minutes{30}, on_output);
   transport_.execute({"rm", "-rf", remote_root}, std::chrono::seconds{30});
   return deployed;

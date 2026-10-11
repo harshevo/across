@@ -1,3 +1,4 @@
+#include "across/github.hpp"
 #include <raylib.h>
 
 #include <algorithm>
@@ -257,6 +258,7 @@ struct TextField {
   Rectangle bounds{};
   bool active{false};
   bool secret{false};
+  bool multiline_paste{false};
   bool select_all{false};
   std::size_t max_length{1024};
 
@@ -294,8 +296,10 @@ struct TextField {
       if (const char* clipboard = GetClipboardText(); clipboard != nullptr) {
         if (select_all) { value.clear(); select_all = false; }
         std::string paste{clipboard};
-        paste.erase(std::remove(paste.begin(), paste.end(), '\n'), paste.end());
-        paste.erase(std::remove(paste.begin(), paste.end(), '\r'), paste.end());
+        if (!multiline_paste) {
+          paste.erase(std::remove(paste.begin(), paste.end(), '\n'), paste.end());
+          paste.erase(std::remove(paste.begin(), paste.end(), '\r'), paste.end());
+        }
         if (value.size() + paste.size() > max_length) {
           paste.resize(max_length - value.size());
         }
@@ -996,6 +1000,20 @@ struct Application {
   TextField dns_zone{"Zone ID", "", "0123456789abcdef0123456789abcdef", "Cloudflare zone ID from the domain overview."};
   TextField dns_token_file{"API token file", "", "/Users/you/.config/across/cloudflare-token", "Local file containing a Cloudflare token with DNS edit access."};
   TextField branch{"Branch", "main", "main", "Git branch that triggers the deployment pipeline."};
+  TextField github_repo{"GitHub repository", "", "owner/repository", "Choose a repository below or enter owner/repository."};
+  TextField github_folder{"Repository folder", "", "/Users/you/Projects/my-app", "Repository root; configure project settings on Projects first."};
+  TextField github_env_name{"Environment key", "", "DATABASE_URL", "Uppercase letters, digits and underscores."};
+  TextField github_env_value{"Secret value", "", "Paste a value", "Values are masked and held in memory until the app closes."};
+  std::map<std::string, across::EnvironmentKeys> github_environment;
+  bool show_github_environment{false};
+  int github_env_scroll{0};
+  std::string github_env_error;
+  nlohmann::json github_data = nlohmann::json::object();
+  bool show_github_repos{false};
+  bool github_refresh_requested{true};
+  bool github_loading{false};
+  std::string github_error;
+  int github_repo_scroll{0};
   TextField pipeline_manifest{"Manifest", "across.json", "frontend/across.json", "Manifest path relative to the repository root."};
   TextField resource_service{"Service", "nginx.service", "across-pm2.service", "Systemd service whose CPU and memory limits you want to set."};
   TextField cpu_limit{"CPU / %", "100", "100", "100 percent allows one full CPU core; 50 allows half a core."};
@@ -1032,7 +1050,7 @@ struct Application {
   bool show_recent_projects{false};
   std::unique_ptr<FileBrowser> file_browser;
   std::vector<TextField*> management_fields() {
-    return {&server_label, &server_host, &server_user, &server_port, &identity, &manifest, &app_id, &project_root, &project_type, &project_port, &domains, &artifact, &install, &build, &deployment_dir, &start, &upstreams, &body_limit, &rate, &burst, &email, &dns_domain, &dns_address, &dns_zone, &dns_token_file, &branch, &pipeline_manifest, &resource_service, &cpu_limit, &memory_limit, &firewall_port, &firewall_protocol, &custom_package, &security_ip, &fail_retry, &fail_window, &fail_ban, &process_filter, &traffic_app, &traffic_hours, &traffic_filter};
+    return {&server_label, &server_host, &server_user, &server_port, &identity, &manifest, &app_id, &project_root, &project_type, &project_port, &domains, &artifact, &install, &build, &deployment_dir, &start, &upstreams, &body_limit, &rate, &burst, &email, &dns_domain, &dns_address, &dns_zone, &dns_token_file, &branch, &pipeline_manifest, &github_repo, &github_folder, &github_env_name, &github_env_value, &resource_service, &cpu_limit, &memory_limit, &firewall_port, &firewall_protocol, &custom_package, &security_ip, &fail_retry, &fail_window, &fail_ban, &process_filter, &traffic_app, &traffic_hours, &traffic_filter};
   }
   std::mutex log_mutex;
   std::string log;
@@ -1045,11 +1063,15 @@ struct Application {
   std::chrono::steady_clock::time_point profile_remove_confirmation{};
 
   Application() {
+    github_env_value.secret = true; github_env_value.multiline_paste = true; github_env_value.max_length = 48 * 1024;
     try {
       std::ifstream input(across::config_directory() / "desktop.json");
       if (input) input >> desktop_state;
       if (!desktop_state.is_object()) desktop_state = nlohmann::json::object();
     } catch (const std::exception& error) { append_log(std::string{"Could not restore desktop state: "} + error.what()); }
+    github_folder.value = desktop_state.value("github_folder", "");
+    github_repo.value = desktop_state.value("github_repository", "");
+    branch.value = desktop_state.value("github_branch", "main");
     servers = store.list_servers();
     const int saved_page = std::clamp(desktop_state.value("page", 1), 0, 11);
     const auto saved_server = desktop_state.value("selected_server", "");
@@ -1068,6 +1090,9 @@ struct Application {
   void save_desktop_state() {
     try {
       desktop_state["page"] = page;
+      desktop_state["github_folder"] = github_folder.value;
+      desktop_state["github_repository"] = github_repo.value;
+      desktop_state["github_branch"] = branch.value;
       if (selected >= 0) desktop_state["selected_server"] = selected_server().id;
       const auto path = across::config_directory() / "desktop.json";
       std::filesystem::create_directories(path.parent_path());
@@ -1296,7 +1321,10 @@ struct Application {
   }
 
   void load_project(const std::filesystem::path& path) {
-    const auto project = across::load_manifest(path);
+    const auto repository = github_folder.value.empty() ? std::filesystem::path{} : std::filesystem::weakly_canonical(github_folder.value);
+    const auto resolved = std::filesystem::weakly_canonical(path);
+    const bool github_project = !repository.empty() && resolved.string().starts_with(repository.string() + "/");
+    const auto project = github_project ? across::load_github_manifest(repository, resolved.lexically_relative(repository).string()) : across::load_manifest(path);
     manifest.value = path.string();
     project_root.value = project.project_root.string(); app_id.value = project.app_id;
     domains.value.clear(); for (const auto& domain : project.nginx.domains) domains.value += domain + " ";
@@ -1315,7 +1343,6 @@ struct Application {
     const auto path = root / "across.json";
     if (std::filesystem::exists(path)) {
       load_project(path);
-      project_root.value = root.string();
     } else {
       project_root.value = root.string(); manifest.value.clear();
       app_id.value = across::slugify(root.filename().string());
@@ -1346,6 +1373,39 @@ struct Application {
       }
       busy.store(false);
     });
+  }
+
+  void refresh_github(bool connect) {
+    if (busy.load()) return;
+    github_refresh_requested = false; github_loading = true; github_error.clear();
+    if (connect) show_activity = true;
+    start_job(connect ? "Connect GitHub" : "Refresh GitHub", [this, connect](const auto& callback) {
+      try {
+        if (connect) {
+          const auto result = across::connect_github(callback);
+          if (!result.ok()) throw std::runtime_error("GitHub sign-in did not finish. Try Connect GitHub again.");
+        }
+        const auto data = across::github_repositories();
+        { std::scoped_lock lock(data_mutex); pending_data = data; pending_kind = "github"; }
+        callback("Connected to GitHub as " + data.at("account").get<std::string>() + "\n");
+        if (data.contains("error")) callback(data.at("error").get<std::string>() + "\n");
+        return across::ProcessResult{0, "", false};
+      } catch (const std::exception& error) {
+        callback(std::string{error.what()} + "\n");
+        { std::scoped_lock lock(data_mutex); pending_data = {{"error", error.what()}}; pending_kind = "github-error"; }
+        return across::ProcessResult{1, "", false};
+      }
+    });
+  }
+
+  bool github_project_ready() const {
+    try {
+      across::validate_github_repository(github_repo.value);
+      across::pipeline_workflow(branch.value, pipeline_manifest.value);
+      if (github_folder.value.empty() || !std::filesystem::is_directory(github_folder.value)) return false;
+      across::load_github_manifest(github_folder.value, pipeline_manifest.value);
+      return true;
+    } catch (const std::exception&) { return false; }
   }
 
   void check_finished_jobs() {
@@ -1379,6 +1439,22 @@ struct Application {
         fail_retry.value = std::to_string(settings.value("maxretry", 5)); fail_window.value = std::to_string(settings.value("findtime", 600)); fail_ban.value = std::to_string(settings.value("bantime", 3600));
       }
       if (pending_kind == "monitoring") accept_monitoring(pending_data);
+      if (pending_kind == "github") {
+        github_data = pending_data; github_loading = false;
+        github_error = pending_data.value("error", "");
+        show_activity = false;
+        show_github_repos = !github_data.value("repositories", nlohmann::json::array()).empty();
+      }
+      if (pending_kind == "github-error") {
+        github_loading = false; github_error = pending_data.value("error", "Could not connect to GitHub");
+        if (!github_data.contains("account")) show_activity = false;
+      }
+      if (pending_kind == "github-clone") {
+        github_folder.value = pending_data.at("path").get<std::string>();
+        select_project_folder(github_folder.value);
+        page = 0;
+        save_desktop_state();
+      }
       if (pending_kind == "list") websites = pending_data.at("apps");
       if (pending_kind == "metrics") metrics = pending_data;
       if (pending_kind == "packages") package_state = pending_data;
@@ -1404,6 +1480,7 @@ struct Application {
       watcher_running = false;
     }
     if (refresh_requested && !busy.load()) refresh_all();
+    if (page == 3 && github_refresh_requested && !busy.load()) refresh_github(false);
     if (page == 11 && monitoring_auto && monitoring_attempted && !busy.load() && GetTime() - monitoring_updated >= 30) refresh_admin("monitoring");
   }
 
@@ -2002,6 +2079,7 @@ void draw_management(Application& app, float x, float width) {
   DrawLineEx({x, 130}, {x + width, 130}, 1, kBorder);
   try {
   if (app.page == 0) {
+    if (button({x + width - 158, 145, 158, 30}, "Deploy from GitHub", !app.busy.load(), ButtonStyle::ghost)) { if (app.github_folder.value.empty()) app.github_folder.value = app.project_root.value; app.page = 3; return; }
     field(app.manifest, x, 185, width - 280);
     if (button({x + width - 268, 185, 128, 38}, "Recent projects", true)) app.show_recent_projects = !app.show_recent_projects;
     if (button({x + width - 128, 185, 128, 38}, "Load", true)) {
@@ -2080,7 +2158,8 @@ void draw_management(Application& app, float x, float width) {
         project.nginx = previous.nginx; project.nginx.domains = domains; project.nginx.upstreams = upstreams;
       }
       across::validate_manifest(project);
-      std::ofstream output(path); output << nlohmann::json(project).dump(2) << '\n'; output.close();
+      auto saved_project = project; saved_project.project_root = ".";
+      std::ofstream output(path); output << nlohmann::json(saved_project).dump(2) << '\n'; output.close();
       if (!output) throw std::runtime_error("Cannot save project manifest");
       app.manifest.value = path.string(); app.append_log("Saved " + path.string());
       app.remember_project();
@@ -2161,17 +2240,107 @@ void draw_management(Application& app, float x, float width) {
       app.start_job("Point DNS", [zone, domain, address, token](const auto& callback) { const auto result = across::point_cloudflare_domain(zone, domain, address, token); callback(result.output); return result; });
     }
   } else if (app.page == 3) {
-    field(app.project_root, x, 235, width); field(app.branch, x, 310, half); field(app.pipeline_manifest, x + half + 32, 310, half);
-    if (button({x, 373, 174, 38}, "Create pipeline", !app.busy.load(), ButtonStyle::primary)) {
-      const auto path = across::create_pipeline(app.project_root.value, app.branch.value, app.pipeline_manifest.value);
-      app.append_log("Created " + path.string() + ". Commit .github/workflows and .across/client, then set repository secrets and enable the production environment.");
+    const bool ready = !app.busy.load();
+    draw_text("GitHub Actions deploys your repository to the selected VPS on every push.", x, 161, 13, kMuted);
+    const bool connected = app.github_data.contains("account");
+    if (button({x, 192, 158, 36}, connected ? "Connected" : (app.github_loading ? "Connecting..." : "Connect GitHub"), ready && !connected, connected ? ButtonStyle::secondary : ButtonStyle::primary)) app.refresh_github(true);
+    if (button({x + 170, 192, 132, 36}, "Refresh repos", ready)) app.refresh_github(false);
+    draw_text(connected ? "GitHub: " + app.github_data.at("account").get<std::string>() : "Sign in with GitHub in your browser.", x + 320, 203, 12, kMuted);
+    if (connected && button({x + width - 132, 192, 132, 36}, "Switch account", ready, ButtonStyle::ghost)) app.refresh_github(true);
+    if (!app.github_error.empty()) draw_text(app.github_error.substr(0, 110), x, 244, 12, kDanger);
+    if (app.show_github_environment) {
+      draw_text("Environment keys for " + app.github_repo.value, x, 263, 16, kText);
+      field(app.github_env_name, x, 318, half);
+      field(app.github_env_value, x + half + 32, 318, half);
+      if (button({x, 390, 150, 36}, "Add / update key", ready)) {
+        try {
+          across::validate_github_repository(app.github_repo.value);
+          across::validate_environment_key(app.github_env_name.value);
+          auto& keys = app.github_environment[app.github_repo.value];
+          if (!keys.contains(app.github_env_name.value) && keys.size() >= 95) throw std::runtime_error("At most 95 application environment keys are supported");
+          if (app.github_env_value.value.size() > 48 * 1024 || app.github_env_value.value.find('\0') != std::string::npos) throw std::runtime_error("Value exceeds 48 KB or contains a null character");
+          keys[app.github_env_name.value] = app.github_env_value.value;
+          app.github_env_name.value.clear(); app.github_env_value.value.clear(); app.github_env_error.clear();
+        } catch (const std::exception& error) { app.github_env_error = error.what(); }
+      }
+      if (button({x + 162, 390, 130, 36}, "Back to setup", ready, ButtonStyle::ghost)) { app.show_github_environment = false; app.github_env_value.value.clear(); }
+      if (!app.github_env_error.empty()) draw_text(app.github_env_error, x, 445, 12, kDanger);
+      auto& keys = app.github_environment[app.github_repo.value];
+      const Rectangle rows{x, 475, width, 176};
+      if (CheckCollisionPointRec(GetMousePosition(), rows)) app.github_env_scroll -= static_cast<int>(GetMouseWheelMove());
+      app.github_env_scroll = std::clamp(app.github_env_scroll, 0, std::max(0, static_cast<int>(keys.size()) - 4));
+      auto item = keys.begin(); std::advance(item, std::min(app.github_env_scroll, static_cast<int>(keys.size())));
+      for (int row = 0; row < 4 && item != keys.end(); ++row, ++item) {
+        const float y = 475 + static_cast<float>(row) * 44;
+        draw_text(item->first + "  |  value hidden", x, y + 10, 13, kText);
+        if (button({x + width - 100, y, 100, 34}, "Remove", ready, ButtonStyle::ghost)) { keys.erase(item); break; }
+      }
+      draw_text(std::to_string(keys.size()) + " keys. Deploy with GitHub uploads them as encrypted repository secrets.", x, 670, 12, kMuted);
+      draw_text("Available to application builds and VPS runtime. Names are committed; values stay out of Git.", x, 696, 12, kMuted);
+      return;
     }
-    if (button({x, 451, 176, 34}, app.show_secrets ? "Hide required secrets" : "Required secrets", true, ButtonStyle::ghost)) app.show_secrets = !app.show_secrets;
-    if (app.show_secrets) {
-      const std::vector<std::pair<std::string, std::string>> secrets{{"ACROSS_HOST", "Host"}, {"ACROSS_USER / ACROSS_PORT", "SSH user / port"}, {"ACROSS_SSH_KEY", "Deployment key"}, {"ACROSS_KNOWN_HOSTS", "Verified host key"}};
-      float y = 510;
-      for (const auto& [name, description] : secrets) { draw_text(name, x, y, 12, kText); draw_text(description, x + 340, y, 12, kMuted); y += 34; }
+    field(app.github_repo, x, 277, width - 160);
+    if (button({x + width - 148, 277, 148, 38}, "Choose repo", ready)) app.show_github_repos = !app.show_github_repos;
+    if (app.show_github_repos) {
+      const auto repos = app.github_data.value("repositories", nlohmann::json::array());
+      if (repos.empty()) draw_text(connected ? "No available repositories. Check GitHub repository access, then Refresh repos." : "Connect GitHub to load repositories.", x, 355, 13, kMuted);
+      const auto visible = Rectangle{x, 346, width, 240};
+      if (CheckCollisionPointRec(GetMousePosition(), visible)) app.github_repo_scroll -= static_cast<int>(GetMouseWheelMove());
+      app.github_repo_scroll = std::clamp(app.github_repo_scroll, 0, std::max(0, static_cast<int>(repos.size()) - 5));
+      for (int row = 0; row < 5 && app.github_repo_scroll + row < static_cast<int>(repos.size()); ++row) {
+        const auto& repo = repos.at(static_cast<std::size_t>(app.github_repo_scroll + row));
+        if (button({x, 346 + static_cast<float>(row) * 44, width, 36}, repo.at("name").get<std::string>(), ready, ButtonStyle::ghost)) {
+          app.github_repo.value = repo.at("name").get<std::string>(); app.branch.value = repo.at("branch").get<std::string>();
+          app.show_github_repos = false; app.save_desktop_state();
+        }
+      }
+      draw_text(std::to_string(repos.size()) + " repositories; scroll to browse", x, 590, 12, kMuted);
+      return;
     }
+    field(app.branch, x, 354, half); field(app.pipeline_manifest, x + half + 32, 354, half);
+    field(app.github_folder, x, 431, width - 180);
+    if (button({x + width - 168, 431, 168, 38}, "Clone project", ready && !app.github_repo.value.empty())) {
+      const auto repo = app.github_repo.value, branch = app.branch.value;
+      app.start_job("Clone GitHub project", [&app, repo, branch](const auto& callback) {
+        const auto path = across::clone_github_project(repo, branch, callback);
+        { std::scoped_lock lock(app.data_mutex); app.pending_data = {{"path", path.string()}}; app.pending_kind = "github-clone"; }
+        callback("Project cloned. Configure and Save the manifest in Projects, then return to Pipelines.\n");
+        return across::ProcessResult{0, "", false};
+      });
+    }
+    const bool project_ready = app.github_project_ready();
+    const std::string next_step = app.github_repo.value.empty() ? "Choose a GitHub repository to begin." :
+        app.github_folder.value.empty() ? "Click Clone project, then configure and Save your deployment settings in Projects." :
+        !project_ready ? "No saved manifest found. Configure and Save in Projects, then select its repository folder and manifest here." :
+        "Project ready. Deploy with GitHub will publish the workflow and configure this VPS.";
+    draw_text(next_step, x, 498, 12, kMuted);
+    if (button({x, 526, 200, 38}, "Deploy with GitHub", enabled && connected && project_ready, ButtonStyle::primary)) {
+      const auto server = app.selected_server(); const auto repo = app.github_repo.value, branch = app.branch.value;
+      const auto project = app.github_folder.value, manifest = app.pipeline_manifest.value;
+      const auto environment = app.github_environment[repo];
+      app.save_desktop_state(); app.show_activity = true;
+      app.start_job("GitHub CI/CD setup", [server, repo, branch, project, manifest, environment](const auto& callback) {
+        return across::deploy_github_project(server, repo, branch, project, manifest, callback, environment);
+      });
+    }
+    if (button({x + 212, 526, 130, 38}, "View runs", ready)) {
+      const auto repo = app.github_repo.value, branch = app.branch.value;
+      app.show_activity = true;
+      app.start_job("GitHub workflow runs", [repo, branch](const auto& callback) {
+        const auto result = across::github_runs(repo, branch); callback(result.output); return result;
+      });
+    }
+    if (button({x + 354, 526, 174, 38}, "Create local workflow", ready)) {
+      std::vector<std::string> environment;
+      for (const auto& [name, value] : app.github_environment[app.github_repo.value]) environment.push_back(name);
+      const auto path = across::create_pipeline(app.github_folder.value.empty() ? app.project_root.value : app.github_folder.value, app.branch.value, app.pipeline_manifest.value, environment);
+      app.append_log("Created " + path.string() + ". Commit the workflow and .across/client and configure repository secrets.");
+    }
+    if (button({x, 586, 200, 36}, "Environment keys (" + std::to_string(app.github_environment[app.github_repo.value].size()) + ")", ready && !app.github_repo.value.empty(), ButtonStyle::secondary)) {
+      app.show_github_environment = true; app.github_env_scroll = 0; app.github_env_error.clear();
+    }
+    draw_text("Deploy with GitHub commits CI files and the saved manifest to your branch, sets secrets, and starts Actions.", x, 656, 12, kMuted);
+    draw_text("A dedicated SSH key is installed on the VPS. Direct deployment remains available in Projects.", x, 682, 12, kMuted);
   } else if (app.page == 4) {
     if (button({x + width - 150, 147, 150, 38}, "Refresh", enabled)) refresh("metrics");
     auto gib = [](std::uint64_t bytes) { std::ostringstream text; text.precision(2); text << std::fixed << static_cast<double>(bytes) / (1024 * 1024 * 1024) << " GiB"; return text.str(); };

@@ -262,7 +262,7 @@ operating system may differ from your application's required version; check
 | Websites | Select deployed apps and manage their Nginx settings |
 | Domains | Configure DNS, issue/renew HTTPS, and control default IP access |
 | Files | Browse local/VPS folders, transfer files, and edit text files |
-| Pipelines | Generate a GitHub Actions deployment workflow locally |
+| Pipelines | Connect GitHub, choose repositories, add environment keys, and publish VPS deployment workflows |
 | Resources | Read VPS health and configure service CPU/memory limits |
 | Firewall | View and manage UFW ports and rules |
 | Connection | Edit SSH details, check connectivity, and install/update the backend |
@@ -427,15 +427,78 @@ must also allow the necessary ports separately.
 
 ## CI/CD
 
-In **Pipelines**, select a project directory, branch, and manifest path. Create
-workflow writes `.github/workflows/across-deploy.yml` and includes the C++ client
-source under `.across/client`. Commit both directories, add the secrets listed in
-the UI, and configure GitHub's `production` environment as appropriate. Existing
-pipelines are preserved rather than overwritten. The runner compiles the C++
-client and deploys each push through SSH with a verified known-hosts entry.
-Bootstrap the VPS before the first workflow run. Workflow creation is local;
-repository publishing, secret configuration, and a successful CI run are separate
-steps. `.github` and `.across` are excluded from deployment uploads.
+Use **Projects → Deploy from GitHub** or open **Pipelines**:
+
+1. Install GitHub CLI (`brew install gh` on macOS; [other platforms](https://cli.github.com/)).
+   Click **Connect GitHub** to open GitHub in your default browser. The one-time
+   device code is copied to your clipboard; paste it into GitHub and authorize.
+   The code is also shown in Activity if clipboard access is unavailable. Across requests repository and workflow access;
+   GitHub CLI manages authentication credentials. **Refresh repos** also works with
+   an existing GitHub CLI login that has these scopes.
+   The button changes to **Connected** and the repository chooser opens when
+   authorization completes. Pipelines also checks your existing login automatically
+   after reopening Across. Repository lookup failures show an error without losing
+   your connected account.
+2. Click **Choose repo** to select a writable repository (including organization
+   repositories), or enter `owner/repository`. Choose the deployment branch.
+3. Click **Clone project**. In Projects, configure your build/start commands,
+   domains, and other deployment settings, then **Save**. For an existing local
+   checkout, enter its repository root in Pipelines instead. The manifest path is
+   relative to that root, for example `frontend/across.json`.
+4. Click **Environment keys** to add application names and values (for example
+   `DATABASE_URL` or `NEXT_PUBLIC_API_URL`). Values are masked; each repository has
+   its own in-memory list. Add or update a key, or remove it before setup. Values
+   are not saved in desktop settings, so unfinished entries must be re-entered
+   after closing Across. Up to 95 application keys are supported, with values up
+   to 48 KB each. Deployment tool names such as `PATH`, `PORT`, and `ACROSS_*`
+   are reserved. `PORT` comes from project settings.
+5. Select the destination VPS. Install its backend in Connection first, then
+   click **Deploy with GitHub**. This button becomes available after choosing a
+   repository folder containing the saved manifest. This publishes a commit to the selected branch,
+   containing the saved manifest, `.github/workflows/across-deploy.yml`, and the
+   C++ deployment client in `.across/client`. The manifest's project path is made
+   relative so it works on the runner. Imported manifests with machine-specific
+   absolute paths are rebased to their containing project folder; repository-relative
+   subproject paths are preserved. Empty install commands use `npm ci` when a
+   package lock exists, or `npm install` for projects with only `package.json`. Local source edits are not published by
+   this action; commit and push application changes through your normal Git flow.
+6. Across checks VPS access, generates and verifies a dedicated CI SSH key,
+   installs its public key in the SSH account's `authorized_keys`, and configures
+   encrypted repository secrets: `ACROSS_HOST`, `ACROSS_USER`, `ACROSS_PORT`,
+   `ACROSS_SSH_KEY`, and `ACROSS_KNOWN_HOSTS`. Private key material is staged in
+   a private temporary directory and removed after setup; your personal private
+   key is not uploaded. Repository administration permission is required.
+7. The workflow deploys that commit and subsequent pushes over SSH. **View runs**
+   shows the latest workflow statuses in Activity; open your repository's Actions
+   page for full logs. A published workflow is not proof of a successful deploy.
+
+Application values are stored as encrypted repository secrets named
+`ACROSS_ENV_<KEY>`. The generated deployment step maps these to the original
+names for application builds. A private JSON file transfers the keys over SSH
+for VPS builds and Node/PM2 runtime; it is stored outside publicly served release
+files with owner-only permissions. Rollback uses that release's environment.
+An older VPS backend is updated during setup when keys are configured. Secret
+values never enter the workflow, manifest, source commit, or setup logs. Frontend
+frameworks can embed public environment values into browser bundles; use their
+public prefixes only for values intended for visitors. After setup, update an
+existing value in the repository's Actions secrets settings. Adding a new name
+to an existing pipeline also requires adding its env mapping and Python key list
+in the workflow. ([GitHub secrets reference](https://docs.github.com/en/actions/reference/security/secrets))
+
+The runner compiles the client and deploys with a verified VPS host key. Allow
+runner access to the VPS SSH port in your cloud firewall. The workflow uses
+GitHub's `production` environment; its approval and branch rules still apply.
+Protected branches can reject the setup commit. Existing Across pipelines are
+preserved; configure them manually or use their existing Actions workflow.
+Setup may leave the dedicated authorized key and some repository secrets if a
+later step fails; inspect Activity before retrying. Remove the public key with
+comment `across-github-owner/repository` from the VPS to revoke CI access.
+The CI key has the same SSH account permissions as the selected administrator.
+
+**Create local workflow** still generates CI files without publishing or setting
+secrets. **Projects → Deploy** continues to deploy directly from your local
+folder, and **Watch** continues its local automatic deployment behavior.
+`.github` and `.across` are excluded from deployment uploads.
 
 ## Server commands
 
@@ -458,7 +521,8 @@ uses polling; project rsync sends changed files after debounce. SCP/SFTP copies
 depend on the corresponding OpenSSH server support. Raw file transfers do not
 apply project deployment exclusions.
 
-Tests cover validation, process timeouts, workflow generation, transfer command
+Tests cover validation, process timeouts, workflow generation, GitHub setup/authentication/secret failures
+with simulated GitHub and SSH plus real Git publishing and key generation, transfer command
 construction with fake executables, website settings persistence, Nginx rollback
 on rejection/reload failure, and SSH-port protection. Server integration tests
 use an isolated filesystem and simulated system commands; they do not prove live

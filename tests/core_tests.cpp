@@ -154,6 +154,15 @@ void test_management(const fs::path& directory) {
   check_throws([&] { across::create_pipeline(project, "main", "across.json"); }, "existing pipeline preserved");
   const auto content = across::pipeline_workflow("main", "across.json");
   check(content.find("ACROSS_KNOWN_HOSTS") != std::string::npos && content.find("set -euo pipefail") != std::string::npos, "pipeline verifies host key and stops on failure");
+  const auto environment_workflow = across::pipeline_workflow("main", "across.json", {"DATABASE_URL", "NEXT_PUBLIC_API_URL"});
+  check(environment_workflow.find("NEXT_PUBLIC_API_URL: ${{ secrets.ACROSS_ENV_NEXT_PUBLIC_API_URL }}") != std::string::npos, "workflow exposes encrypted application secrets");
+  for (const auto* key : {"1KEY", "lowercase", "BAD;KEY", "PATH", "PORT", "GITHUB_TOKEN", "ACROSS_ENV_FILE", "BASH_ENV"})
+    check_throws([&] { across::pipeline_workflow("main", "across.json", {key}); }, "unsafe or reserved environment key rejected");
+  const auto env_file = directory / "environment.json";
+  std::ofstream(env_file) << nlohmann::json{{"DATABASE_URL", "quote'\nmultiline"}, {"EMPTY", ""}}.dump();
+  check(across::load_environment_keys(env_file).at("DATABASE_URL") == "quote'\nmultiline", "environment JSON preserves multiline values");
+  std::ofstream(env_file) << "{secret-value-is-invalid}";
+  check_throws([&] { across::load_environment_keys(env_file); }, "invalid environment JSON rejected");
   check_throws([&] { across::point_cloudflare_domain("wrong", "example.com", "1.2.3.4", directory / "token"); }, "invalid DNS zone rejected before network");
 }
 
@@ -170,6 +179,11 @@ void test_transfers(const fs::path& directory) {
   setenv("PATH", (bin.string() + ":" + previous_path).c_str(), 1);
   const auto local = directory / "a file.txt"; std::ofstream(local) << "hello";
   across::ServerProfile profile{"test", "Test", "server.example.com", "deploy", 2222, ""};
+  const auto previous_config = std::getenv("ACROSS_CONFIG_DIR") ? std::string(std::getenv("ACROSS_CONFIG_DIR")) : std::string{};
+  setenv("ACROSS_CONFIG_DIR", (directory / "Application Support/Across").c_str(), 1);
+  const auto ssh = across::SshTransport(profile).execute({"true"});
+  check(ssh.output.find("UserKnownHostsFile=\"" + across::known_hosts_path().string() + "\"") != std::string::npos, "SSH quotes paths with spaces for its config parser");
+  if (previous_config.empty()) unsetenv("ACROSS_CONFIG_DIR"); else setenv("ACROSS_CONFIG_DIR", previous_config.c_str(), 1);
   for (const auto& protocol : {"rsync", "scp", "sftp"}) {
     profile.transfer_protocol = protocol;
     across::SshTransport transport(profile);

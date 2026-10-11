@@ -40,14 +40,92 @@ void validate_firewall_rule(const std::string& action, const std::string& port, 
   if (!std::regex_match(port, std::regex("^[0-9]{1,5}$")) || std::stoi(port) < 1 || std::stoi(port) > 65535)
     throw std::runtime_error("Port must be between 1 and 65535");
 }
-std::string pipeline_workflow(const std::string& branch, const std::string& manifest) {
-  if (!std::regex_match(branch, std::regex("^[A-Za-z0-9][A-Za-z0-9._/-]{0,99}$"))) throw std::runtime_error("Invalid branch");
+void validate_environment_key(const std::string& name) {
+  static const std::regex valid("^[A-Z_][A-Z0-9_]{0,99}$");
+  if (!std::regex_match(name, valid)) throw std::runtime_error("Environment key must use uppercase letters, digits and underscores, and cannot start with a digit");
+  for (const auto* prefix : {"GITHUB_", "RUNNER_", "ACTIONS_", "ACROSS_", "DEPLOY_"})
+    if (name.starts_with(prefix)) throw std::runtime_error("Environment key uses a reserved deployment prefix");
+  for (const auto* reserved : {"PATH", "HOME", "USER", "LOGNAME", "SHELL", "BASH_ENV", "ENV", "IFS", "LD_PRELOAD", "LD_LIBRARY_PATH", "SHELLOPTS", "BASHOPTS", "PM2_HOME", "PORT", "CI"})
+    if (name == reserved) throw std::runtime_error("Environment key is reserved by the deployment tools");
+}
+EnvironmentKeys load_environment_keys(const std::filesystem::path& path) {
+  std::ifstream input(path);
+  if (!input) throw std::runtime_error("Cannot open environment file");
+  const auto data = nlohmann::json::parse(input, nullptr, false);
+  if (!data.is_object() || data.size() > 95) throw std::runtime_error("Environment must be an object with at most 95 keys");
+  EnvironmentKeys values;
+  for (const auto& [name, value] : data.items()) {
+    validate_environment_key(name);
+    if (!value.is_string()) throw std::runtime_error("Environment values must be strings");
+    auto text = value.get<std::string>();
+    if (text.size() > 48 * 1024 || text.find('\0') != std::string::npos) throw std::runtime_error("Environment value exceeds 48 KB or contains a null character");
+    values.emplace(name, std::move(text));
+  }
+  return values;
+}
+std::string pipeline_workflow(const std::string& branch, const std::string& manifest, const std::vector<std::string>& environment) {
+  if (!std::regex_match(branch, std::regex("^[A-Za-z0-9][A-Za-z0-9._/-]{0,99}$")) || branch.find("..") != std::string::npos || branch.find("//") != std::string::npos || branch.ends_with("/") || branch.ends_with(".") || branch.ends_with(".lock")) throw std::runtime_error("Invalid branch");
   if (!std::regex_match(manifest, std::regex("^[A-Za-z0-9][A-Za-z0-9._/-]{0,199}$")) || manifest.find("..") != std::string::npos)
     throw std::runtime_error("Manifest must be a safe relative repository path");
-  return "name: Deploy with Across\non:\n  push:\n    branches: ['" + branch + "']\n  workflow_dispatch:\npermissions:\n  contents: read\nconcurrency:\n  group: across-production\n  cancel-in-progress: false\njobs:\n  deploy:\n    runs-on: ubuntu-latest\n    environment: production\n    steps:\n      - uses: actions/checkout@v4\n      - name: Build C++ deployment client\n        run: |\n          sudo apt-get update\n          sudo apt-get install -y cmake g++ rsync\n          cmake -S .across/client -B .across/build -DACROSS_BUILD_DESKTOP=OFF -DACROSS_BUILD_TESTS=OFF -DACROSS_BUILD_SERVER=OFF\n          cmake --build .across/build --parallel 2\n      - name: Deploy\n        env:\n          ACROSS_REQUIRE_KNOWN_HOST: '1'\n          DEPLOY_HOST: ${{ secrets.ACROSS_HOST }}\n          DEPLOY_USER: ${{ secrets.ACROSS_USER }}\n          DEPLOY_PORT: ${{ secrets.ACROSS_PORT }}\n          DEPLOY_KEY: ${{ secrets.ACROSS_SSH_KEY }}\n          DEPLOY_HOST_KEY: ${{ secrets.ACROSS_KNOWN_HOSTS }}\n        shell: bash\n        run: |\n          set -euo pipefail\n          test -n \"$DEPLOY_HOST_KEY\"\n          mkdir -p ~/.config/across\n          chmod 700 ~/.config/across\n          trap 'rm -f ~/.config/across/ci-key' EXIT\n          printf '%s\\n' \"$DEPLOY_KEY\" > ~/.config/across/ci-key\n          chmod 600 ~/.config/across/ci-key\n          printf '%s\\n' \"$DEPLOY_HOST_KEY\" > ~/.config/across/known_hosts\n          .across/build/across server add ci --host \"$DEPLOY_HOST\" --user \"${DEPLOY_USER:-ubuntu}\" --port \"${DEPLOY_PORT:-22}\" --identity ~/.config/across/ci-key\n          .across/build/across deploy ci " + manifest + "\n";
+  if (environment.size() > 95) throw std::runtime_error("At most 95 application environment keys are supported");
+  std::string env;
+  for (const auto& key : environment) {
+    validate_environment_key(key);
+    env += "          " + key + ": ${{ secrets.ACROSS_ENV_" + key + " }}\n";
+  }
+  std::ostringstream workflow;
+  workflow << "name: Deploy with Across\non:\n  push:\n    branches: ['" << branch << "']\n  workflow_dispatch:\n"
+      << R"YAML(permissions:
+  contents: read
+concurrency:
+  group: across-production
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build C++ deployment client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake g++ rsync
+          cmake -S .across/client -B .across/build -DACROSS_BUILD_DESKTOP=OFF -DACROSS_BUILD_TESTS=OFF -DACROSS_BUILD_SERVER=OFF
+          cmake --build .across/build --parallel 2
+      - name: Deploy
+        env:
+          ACROSS_REQUIRE_KNOWN_HOST: '1'
+          DEPLOY_HOST: ${{ secrets.ACROSS_HOST }}
+          DEPLOY_USER: ${{ secrets.ACROSS_USER }}
+          DEPLOY_PORT: ${{ secrets.ACROSS_PORT }}
+          DEPLOY_KEY: ${{ secrets.ACROSS_SSH_KEY }}
+          DEPLOY_HOST_KEY: ${{ secrets.ACROSS_KNOWN_HOSTS }}
+)YAML" << env << R"YAML(        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          test -n "$DEPLOY_HOST_KEY"
+          mkdir -p ~/.config/across
+          chmod 700 ~/.config/across
+          trap 'rm -f ~/.config/across/ci-key ~/.config/across/environment.json' EXIT
+          printf '%s\n' "$DEPLOY_KEY" > ~/.config/across/ci-key
+          printf '%s\n' "$DEPLOY_HOST_KEY" > ~/.config/across/known_hosts
+)YAML";
+  if (!environment.empty()) {
+    workflow << "          export ACROSS_ENV_FILE=~/.config/across/environment.json\n"
+             << "          python3 - <<'PY'\n"
+             << "          import json, os\n"
+             << "          keys = " << nlohmann::json(environment).dump() << "\n"
+             << "          with open(os.environ['ACROSS_ENV_FILE'], 'w') as output:\n"
+             << "              json.dump({key: os.environ[key] for key in keys}, output)\n"
+             << "          PY\n";
+  }
+  workflow << "          .across/build/across server add ci --host \"$DEPLOY_HOST\" --user \"${DEPLOY_USER:-ubuntu}\" --port \"${DEPLOY_PORT:-22}\" --identity ~/.config/across/ci-key\n"
+           << "          .across/build/across deploy ci " << manifest << "\n";
+  return workflow.str();
 }
-std::filesystem::path create_pipeline(const std::filesystem::path& project, const std::string& branch, const std::string& manifest) {
-  const auto workflow = pipeline_workflow(branch, manifest);
+std::filesystem::path create_pipeline(const std::filesystem::path& project, const std::string& branch, const std::string& manifest, const std::vector<std::string>& environment) {
+  const auto workflow = pipeline_workflow(branch, manifest, environment);
   if (!std::filesystem::is_regular_file(project / manifest)) throw std::runtime_error("Project manifest does not exist");
   const auto path = project / ".github/workflows/across-deploy.yml";
   if (std::filesystem::exists(path) || std::filesystem::exists(project / ".across/client")) throw std::runtime_error("Pipeline already exists; move the existing workflow and .across/client before regenerating");

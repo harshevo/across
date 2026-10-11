@@ -47,7 +47,7 @@ std::vector<std::string> SshTransport::ssh_arguments() const {
       "-o", "ServerAliveInterval=15",
       "-o", "ServerAliveCountMax=3",
       "-o", std::getenv("ACROSS_REQUIRE_KNOWN_HOST") ? "StrictHostKeyChecking=yes" : "StrictHostKeyChecking=accept-new",
-      "-o", "UserKnownHostsFile=" + known_hosts_path().string(),
+      "-o", "UserKnownHostsFile=\"" + known_hosts_path().string() + "\"",
       "-p", std::to_string(profile_.port)};
   if (!profile_.identity_file.empty()) {
     arguments.emplace_back("-o");
@@ -93,7 +93,7 @@ std::string SshTransport::rsync_shell() const {
       "ssh -o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=15 "
       "-o ServerAliveCountMax=3 -o " +
       (std::getenv("ACROSS_REQUIRE_KNOWN_HOST") ? std::string("StrictHostKeyChecking=yes") : std::string("StrictHostKeyChecking=accept-new")) + " -o " +
-      shell_quote("UserKnownHostsFile=" + known_hosts_path().string()) + " -p " +
+      shell_quote("UserKnownHostsFile=\"" + known_hosts_path().string() + "\"") + " -p " +
       std::to_string(profile_.port);
   if (!profile_.identity_file.empty()) {
     command += " -o IdentitiesOnly=yes -i " + shell_quote(profile_.identity_file);

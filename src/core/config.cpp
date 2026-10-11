@@ -87,7 +87,16 @@ std::filesystem::path config_directory() {
 std::filesystem::path known_hosts_path() {
   const auto directory = config_directory();
   make_private_directory(directory);
-  return directory / "known_hosts";
+  const auto path = directory / "known_hosts";
+#ifdef __APPLE__
+  const auto legacy = home_directory() / "Library/Application";
+  if (directory == home_directory() / "Library/Application Support/Across" &&
+      !std::filesystem::exists(path) && std::filesystem::is_regular_file(legacy)) {
+    std::filesystem::copy_file(legacy, path);
+    std::filesystem::permissions(path, std::filesystem::perms::owner_read | std::filesystem::perms::owner_write);
+  }
+#endif
+  return path;
 }
 
 ConfigStore::ConfigStore(std::filesystem::path path)

@@ -37,6 +37,7 @@ FetchContent_MakeAvailable(nlohmann_json)
 
 add_library(across_core
   src/core/config.cpp
+  src/core/github.cpp
   src/core/management.cpp
   src/core/packages.cpp
   src/core/deployer.cpp
@@ -144,6 +145,10 @@ install(FILES CMakeLists.txt DESTINATION ${CMAKE_INSTALL_DATADIR}/across/server)
 
 if(ACROSS_BUILD_TESTS)
   enable_testing()
+  add_executable(across-github-tests tests/github_tests.cpp)
+  target_link_libraries(across-github-tests PRIVATE across_core)
+  across_enable_warnings(across-github-tests)
+  add_test(NAME across-github-tests COMMAND across-github-tests)
   add_executable(across-tests tests/core_tests.cpp)
   target_link_libraries(across-tests PRIVATE across_core)
   across_enable_warnings(across-tests)

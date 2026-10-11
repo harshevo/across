@@ -19,7 +19,7 @@ int main() {
   fs::create_directories(fs::path(kAppsRoot) / "sample/current");
   fs::create_directories(kNginxRoot);
   const auto config = nginx_config_path("sample");
-  for (const auto& command : {"nginx", "systemctl", "ufw"}) {
+  for (const auto& command : {"nginx", "systemctl", "ufw", "chown"}) {
     const auto path = server_test_root / "bin" / command;
     std::ofstream output(path); output << "#!/bin/sh\n";
     if (std::string(command) == "nginx") output << "case \"$(cat " << across::shell_quote(config.string()) << ")\" in *reject*) printf rejected; exit 1;; esac\n";
@@ -105,6 +105,30 @@ int main() {
     check(traffic_format().find("set_real_ip_from 173.245.48.0/20") != std::string::npos && traffic_format().find("set_real_ip_from 0.0.0.0") == std::string::npos, "visitor header trusted only for published Cloudflare peers");
     invoke(traffic_logging, {"across-server", "traffic-logging", "--app", "sample", "--action", "disable"});
     check(!fs::exists(traffic_marker("sample")), "website logging can be disabled");
+    const auto env_app = fs::path(kAppsRoot) / "environment-test";
+    const auto env_release = env_app / "releases/20261011T000000Z-abcd";
+    const auto previous_release = env_app / "releases/20261010T000000Z-abcd";
+    fs::create_directories(env_release); fs::create_directories(previous_release);
+    fs::create_symlink(env_release, env_app / "current");
+    const auto env_input = server_test_root / "environment.json";
+    const std::string env_value = "secret'\nmultiline;$HOME";
+    write_file_atomically(env_input, nlohmann::json{{"DATABASE_URL", env_value}}.dump());
+    write_release_environment(env_release, env_input);
+    check(!fs::exists(env_release / ".across-environment.json"), "environment secrets stay outside public release files");
+    check((fs::status(release_environment_path(env_release)).permissions() & fs::perms::others_read) == fs::perms::none, "release environment file has private permissions");
+    const auto exports = fs::path(release_environment_path(env_release).string() + ".sh");
+    const auto exported = across::run_process({"sh", "-c", ". " + across::shell_quote(exports.string()) + "; printf '%s' \"$DATABASE_URL\""});
+    check(exported.ok() && exported.output == env_value, "VPS build exports preserve quotes, newlines and literal shell syntax");
+    manifest.type = "node"; manifest.app_id = "environment-test"; manifest.start_command = "node server.js";
+    const auto ecosystem_path = write_ecosystem(manifest, env_app);
+    check(read_file(ecosystem_path).find(nlohmann::json(env_value).dump()) != std::string::npos, "PM2 receives release environment values");
+    check((fs::status(ecosystem_path).permissions() & fs::perms::group_read) == fs::perms::none, "PM2 ecosystem containing secrets has private permissions");
+    write_file_atomically(env_input, nlohmann::json{{"DATABASE_URL", "previous-value"}}.dump());
+    write_release_environment(previous_release, env_input);
+    fs::remove(env_app / "current"); fs::create_symlink(previous_release, env_app / "current");
+    check(read_file(write_ecosystem(manifest, env_app)).find("previous-value") != std::string::npos, "rollback loads environment from the previous release");
+    remove_old_releases(env_app / "releases", 1);
+    check(!fs::exists(release_environment_path(previous_release)), "old release cleanup also removes its secret file");
     AppLock first("sample"); rejected([] { AppLock second("sample"); }, "parallel app mutation rejected");
   } catch (const std::exception& error) { std::cerr << error.what() << '\n'; ++failures; }
   setenv("PATH", original_path.c_str(), 1);
